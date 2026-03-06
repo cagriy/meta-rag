@@ -13,5 +13,8 @@ wheels/
 example_data/
 data/
 
+# Environment variables
+.env
+
 # Claude internal
 .claude/
