@@ -73,7 +73,7 @@ class TestToDDLWithFields:
         ddl = schema_with_fields.to_ddl()
         assert "id INTEGER PRIMARY KEY AUTOINCREMENT" in ddl
         assert "doc_id TEXT NOT NULL" in ddl
-        assert "chunk_id TEXT NOT NULL" in ddl
+        assert "chunk_id" not in ddl
 
     def test_contains_dynamic_text_field(self, schema_with_fields: MetadataSchema):
         ddl = schema_with_fields.to_ddl()
@@ -87,17 +87,15 @@ class TestToDDLWithFields:
         ddl = schema_with_fields.to_ddl()
         id_pos = ddl.index("id INTEGER PRIMARY KEY AUTOINCREMENT")
         doc_id_pos = ddl.index("doc_id TEXT NOT NULL")
-        chunk_id_pos = ddl.index("chunk_id TEXT NOT NULL")
         author_pos = ddl.index("author TEXT")
         year_pos = ddl.index("year INTEGER")
-        assert id_pos < doc_id_pos < chunk_id_pos < author_pos < year_pos
+        assert id_pos < doc_id_pos < author_pos < year_pos
 
     def test_full_ddl_snapshot(self, schema_with_fields: MetadataSchema):
         expected = (
             "CREATE TABLE IF NOT EXISTS documents_metadata (\n"
             "    id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
             "    doc_id TEXT NOT NULL,\n"
-            "    chunk_id TEXT NOT NULL,\n"
             "    author TEXT,\n"
             "    year INTEGER\n"
             ");"
@@ -115,22 +113,21 @@ class TestToDDLEmpty:
         ddl = empty_schema.to_ddl()
         assert "id INTEGER PRIMARY KEY AUTOINCREMENT" in ddl
         assert "doc_id TEXT NOT NULL" in ddl
-        assert "chunk_id TEXT NOT NULL" in ddl
+        assert "chunk_id" not in ddl
 
     def test_full_ddl_snapshot_empty(self, empty_schema: MetadataSchema):
         expected = (
             "CREATE TABLE IF NOT EXISTS documents_metadata (\n"
             "    id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
-            "    doc_id TEXT NOT NULL,\n"
-            "    chunk_id TEXT NOT NULL\n"
+            "    doc_id TEXT NOT NULL\n"
             ");"
         )
         assert empty_schema.to_ddl() == expected
 
     def test_no_trailing_comma_after_last_fixed_column(self, empty_schema: MetadataSchema):
         ddl = empty_schema.to_ddl()
-        # After "chunk_id TEXT NOT NULL" there should be a newline then ");", no comma
-        assert "chunk_id TEXT NOT NULL\n);" in ddl
+        # After "doc_id TEXT NOT NULL" there should be a newline then ");", no comma
+        assert "doc_id TEXT NOT NULL\n);" in ddl
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +245,7 @@ class TestToToolDefinitions:
         assert "Table: documents_metadata(" in desc
         assert "id INTEGER PRIMARY KEY" in desc
         assert "doc_id TEXT" in desc
-        assert "chunk_id TEXT" in desc
+        assert "chunk_id" not in desc
         assert "author TEXT" in desc
         assert "year INTEGER" in desc
 
@@ -268,7 +265,7 @@ class TestToToolDefinitions:
         desc = tools[1]["function"]["description"]
         assert "id INTEGER PRIMARY KEY" in desc
         assert "doc_id TEXT" in desc
-        assert "chunk_id TEXT" in desc
+        assert "chunk_id" not in desc
 
 
 # ---------------------------------------------------------------------------

@@ -9,10 +9,11 @@ This script demonstrates the core workflow of meta-rag:
 Requires: OPENAI_API_KEY environment variable set.
 
 Usage:
-    uv run python examples/example_usage.py
+    uv run python examples/example_usage.py [--verbose]
 """
 
 import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -22,6 +23,7 @@ from meta_rag import MetaRAG, MetadataField
 
 
 def main():
+    verbose = "--verbose" in sys.argv
     # ------------------------------------------------------------------
     # 1. Define the metadata schema
     #    Each MetadataField describes a piece of structured information
@@ -98,6 +100,8 @@ def main():
         print(f"\nQ: {q}")
         answer = rag.query(q)
         print(f"A: {answer}")
+        if verbose and rag.last_sql:
+            print(f"SQL: {rag.last_sql}")
 
     # ------------------------------------------------------------------
     # 5. Interactive query loop (with schema gap detection)
@@ -132,7 +136,10 @@ def main():
             result = rag.backfill(on_progress=_progress)
             print(f"\nBackfill complete. Populated: {result['populated']}  Pruned: {result['pruned']}")
             continue
-        print(f"A: {rag.query(question, evolve=True)}")
+        answer = rag.query(question, evolve=True)
+        print(f"A: {answer}")
+        if verbose and rag.last_sql:
+            print(f"SQL: {rag.last_sql}")
 
 
 if __name__ == "__main__":

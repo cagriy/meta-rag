@@ -61,6 +61,7 @@ class MetaRAG:
         # 2. Else use provided schema list
         # 3. Else remains None — auto-discover on first ingest()
         self.schema: MetadataSchema | None = None
+        self.last_sql: str | None = None
         self._resolve_schema(schema)
 
     def _resolve_schema(self, schema: list[MetadataField] | None) -> None:
@@ -125,6 +126,7 @@ class MetaRAG:
         )
 
         answer = query_pipeline.query(question)
+        self.last_sql = query_pipeline.last_sql
 
         if evolve:
             result = self._detect_schema_gap(question)
@@ -142,14 +144,22 @@ class MetaRAG:
         fields_text = "\n".join(current_fields) if current_fields else "(no fields defined)"
 
         system_message = (
-            "You are a schema analyst. Given a user question and the current metadata schema, "
-            "determine if the question requires a metadata field that doesn't exist in the schema. "
+            "You are a schema analyst for a structured metadata database. "
+            "Given a user question and the current schema, decide if the question requires "
+            "a SHORT, STRUCTURED metadata field that is missing.\n\n"
+            "A valid gap is a field that is:\n"
+            "  - atomic and short (e.g. a name, a year, a category, a country)\n"
+            "  - useful for filtering or aggregation (GROUP BY, COUNT, WHERE)\n"
+            "  - not already answerable by searching the document text\n\n"
+            "Do NOT flag a gap for:\n"
+            "  - open-ended or descriptive questions (e.g. 'tell me about', 'explain', 'describe')\n"
+            "  - fields that would store long text or summaries (e.g. biography, summary, description)\n"
+            "  - questions already well-served by semantic/vector search\n"
+            "  - fields that already exist in the schema\n\n"
             "Return JSON with:\n"
-            "- gap_detected (bool): true if a genuinely new field would help answer the question\n"
+            "- gap_detected (bool)\n"
             "- reasoning (string): brief explanation\n"
-            "- proposed_field (object or null): if gap_detected, provide {name (snake_case), type ('text' or 'integer'), description}\n\n"
-            "Do NOT propose a field that already exists. Only propose a field if it would "
-            "materially help answer the question.\n\n"
+            "- proposed_field (object or null): if gap_detected, {name (snake_case), type ('text' or 'integer'), description}\n\n"
             f"Current schema fields:\n{fields_text}"
         )
 
@@ -233,7 +243,7 @@ class MetaRAG:
             metadata = extractor.extract(text, backfill_schema)
             for field_name, value in metadata.items():
                 if value is not None:
-                    self.relational_store.update_metadata_field(chunk_id, field_name, value)
+                    self.relational_store.update_metadata_field(doc_id, field_name, value)
                     self.vector_store.update_metadata(chunk_id, {field_name: value})
             if on_progress:
                 on_progress(idx + 1, total)

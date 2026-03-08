@@ -20,13 +20,17 @@ class QueryPipeline:
         self.tool_executor = tool_executor
         self.schema = schema
         self.tools = schema.to_tool_definitions()
+        self.last_sql: str | None = None
 
     def query(self, question: str) -> str:
         system_prompt = (
             "You are a helpful assistant that answers questions about a document collection. "
             "Use the available tools to find information. "
             "For quantitative questions (counts, averages, comparisons), prefer run_sql. "
-            "For qualitative questions (descriptions, explanations), prefer semantic_search."
+            "For qualitative questions (descriptions, explanations), prefer semantic_search. "
+            "When writing SQL for text fields, use LIKE with wildcards for partial matching "
+            "(e.g. WHERE birthplace LIKE '%England%') rather than exact equality, "
+            "since stored values are full location or description strings."
         )
 
         messages: list[dict] = [
@@ -48,10 +52,13 @@ class QueryPipeline:
             return choice.message.content
 
         # Execute each tool call and collect results
+        self.last_sql = None
         tool_results: list[dict] = []
         for tool_call in choice.message.tool_calls:
             name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
+            if name == "run_sql":
+                self.last_sql = arguments.get("sql")
             result = self.tool_executor.execute(name, arguments)
             tool_results.append(
                 {

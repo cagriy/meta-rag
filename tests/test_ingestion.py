@@ -339,7 +339,7 @@ class TestIngestionPipelineIntegration:
         assert rows[0]["cnt"] >= 1
 
         detail_rows = relational_store.execute_sql(
-            "SELECT doc_id, chunk_id, author, year FROM documents_metadata"
+            "SELECT doc_id, author, year FROM documents_metadata"
         )
         assert len(detail_rows) >= 1
         assert detail_rows[0]["author"] == "TestAuthor"

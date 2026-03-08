@@ -47,16 +47,28 @@ class SQLiteRelationalStore(RelationalStore):
         finally:
             conn.close()
 
-    def insert(self, doc_id: str, chunk_id: str, metadata: dict) -> None:
-        columns = ["doc_id", "chunk_id"] + list(metadata.keys())
-        values = [doc_id, chunk_id] + list(metadata.values())
-        placeholders = ", ".join("?" for _ in columns)
-        column_names = ", ".join(columns)
-        sql = f"INSERT INTO {MetadataSchema.TABLE_NAME} ({column_names}) VALUES ({placeholders})"
-
+    def insert(self, doc_id: str, metadata: dict) -> None:
         conn = sqlite3.connect(self.db_path)
         try:
-            conn.execute(sql, values)
+            existing = conn.execute(
+                f"SELECT id FROM {MetadataSchema.TABLE_NAME} WHERE doc_id = ?", (doc_id,)
+            ).fetchone()
+            if existing:
+                for key, value in metadata.items():
+                    if value is not None:
+                        conn.execute(
+                            f"UPDATE {MetadataSchema.TABLE_NAME} SET {key} = COALESCE({key}, ?) WHERE doc_id = ?",
+                            (value, doc_id),
+                        )
+            else:
+                columns = ["doc_id"] + list(metadata.keys())
+                values = [doc_id] + list(metadata.values())
+                placeholders = ", ".join("?" for _ in columns)
+                column_names = ", ".join(columns)
+                conn.execute(
+                    f"INSERT INTO {MetadataSchema.TABLE_NAME} ({column_names}) VALUES ({placeholders})",
+                    values,
+                )
             conn.commit()
         finally:
             conn.close()
@@ -109,7 +121,7 @@ class SQLiteRelationalStore(RelationalStore):
             if not rows:
                 return None
 
-            skip_columns = {"id", "doc_id", "chunk_id"}
+            skip_columns = {"id", "doc_id"}
             fields: list[MetadataField] = []
             for row in rows:
                 col_name = row[1]
@@ -158,7 +170,7 @@ class SQLiteRelationalStore(RelationalStore):
             cursor = conn.execute(f"PRAGMA table_info({MetadataSchema.TABLE_NAME})")
             pragma_rows = cursor.fetchall()
 
-            skip = {"id", "doc_id", "chunk_id"}
+            skip = {"id", "doc_id"}
             empty_fields = []
             for row in pragma_rows:
                 col_name = row[1]
@@ -178,12 +190,12 @@ class SQLiteRelationalStore(RelationalStore):
         empty = set(self.get_empty_fields())
         return [f for f in schema.fields if f.name in empty]
 
-    def update_metadata_field(self, chunk_id: str, field_name: str, value: object) -> None:
+    def update_metadata_field(self, doc_id: str, field_name: str, value: object) -> None:
         conn = sqlite3.connect(self.db_path)
         try:
             conn.execute(
-                f"UPDATE {MetadataSchema.TABLE_NAME} SET {field_name} = ? WHERE chunk_id = ?",
-                (value, chunk_id),
+                f"UPDATE {MetadataSchema.TABLE_NAME} SET {field_name} = ? WHERE doc_id = ?",
+                (value, doc_id),
             )
             conn.commit()
         finally:

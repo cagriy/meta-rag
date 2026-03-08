@@ -159,14 +159,14 @@ class TestGetEmptyFields:
     def test_all_null_column_is_returned(self, tmp_path):
         store = _init_store(tmp_path)
         # Insert a row with NULL for both author and year
-        store.insert("doc1", "chunk1", {"author": None, "year": None})
+        store.insert("doc1", {"author": None, "year": None})
         empty = store.get_empty_fields()
         assert "author" in empty
         assert "year" in empty
 
     def test_populated_column_not_returned(self, tmp_path):
         store = _init_store(tmp_path)
-        store.insert("doc1", "chunk1", {"author": "Alice", "year": None})
+        store.insert("doc1", {"author": "Alice", "year": None})
         empty = store.get_empty_fields()
         assert "author" not in empty
         assert "year" in empty
@@ -176,7 +176,7 @@ class TestGetEmptyFields:
         empty = store.get_empty_fields()
         assert "id" not in empty
         assert "doc_id" not in empty
-        assert "chunk_id" not in empty
+        assert "chunk_id" not in empty  # chunk_id no longer exists as a column
 
 
 # ===========================================================================
@@ -202,21 +202,21 @@ class TestDocumentHashes:
 
     def test_delete_document_removes_hash(self, tmp_path):
         store = _init_store(tmp_path)
-        store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        store.insert("doc1", {"author": "Alice", "year": 2023})
         store.set_document_hash("doc1", "abc123")
         store.delete_document("doc1")
         assert store.get_document_hash("doc1") is None
 
     def test_delete_document_removes_metadata_rows(self, tmp_path):
         store = _init_store(tmp_path)
-        store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        store.insert("doc1", {"author": "Alice", "year": 2023})
         store.delete_document("doc1")
         rows = store.execute_sql("SELECT COUNT(*) AS cnt FROM documents_metadata")
         assert rows[0]["cnt"] == 0
 
     def test_clear_all_data_removes_everything(self, tmp_path):
         store = _init_store(tmp_path)
-        store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        store.insert("doc1", {"author": "Alice", "year": 2023})
         store.set_document_hash("doc1", "abc123")
         store.clear_all_data()
 
@@ -268,7 +268,7 @@ class TestQueryWithEvolve:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         mock_vector = MagicMock()
         mock_vector.search.return_value = []
@@ -322,7 +322,7 @@ class TestQueryWithoutEvolve:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         mock_vector = MagicMock()
         mock_vector.search.return_value = []
@@ -437,7 +437,7 @@ class TestBackfill:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         # Add a new column with no values
         new_field = MetadataField(
@@ -472,7 +472,7 @@ class TestBackfill:
 
         # Verify the DB was updated
         rows = relational_store.execute_sql(
-            "SELECT country FROM documents_metadata WHERE chunk_id = 'chunk1'"
+            "SELECT country FROM documents_metadata WHERE doc_id = 'doc1'"
         )
         assert rows[0]["country"] == "Germany"
 
@@ -484,7 +484,7 @@ class TestBackfill:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         new_field = MetadataField(
             name="country", type="text", description="Country"
@@ -523,7 +523,7 @@ class TestBackfill:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         mock_vector = MagicMock()
 
@@ -547,7 +547,7 @@ class TestBackfill:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": None, "year": None})
+        relational_store.insert("doc1", {"author": None, "year": None})
 
         mock_vector = MagicMock()
         mock_vector.get_all_chunks.return_value = [
@@ -555,7 +555,7 @@ class TestBackfill:
             ("doc1", "chunk2", "text2"),
         ]
         # Insert second chunk so it's in the DB too
-        relational_store.insert("doc1", "chunk2", {"author": None, "year": None})
+        relational_store.insert("doc1", {"author": None, "year": None})
 
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -673,7 +673,7 @@ class TestPruneEmptyFields:
         schema = _make_schema()
         relational_store.initialize(schema)
         # Insert a row with NULL for both fields
-        relational_store.insert("doc1", "chunk1", {"author": None, "year": None})
+        relational_store.insert("doc1", {"author": None, "year": None})
 
         rag = MetaRAG(
             llm_model="gpt-4o",
@@ -696,7 +696,7 @@ class TestPruneEmptyFields:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
-        relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": None})
+        relational_store.insert("doc1", {"author": "Alice", "year": None})
 
         rag = MetaRAG(
             llm_model="gpt-4o",

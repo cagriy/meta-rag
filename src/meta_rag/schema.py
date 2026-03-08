@@ -49,7 +49,6 @@ class MetadataSchema:
         lines = [
             "id INTEGER PRIMARY KEY AUTOINCREMENT",
             "doc_id TEXT NOT NULL",
-            "chunk_id TEXT NOT NULL",
         ]
         for field in self.fields:
             sql_type = TYPE_MAP[field.type]
@@ -121,7 +120,6 @@ class MetadataSchema:
         schema_parts = [
             "id INTEGER PRIMARY KEY",
             "doc_id TEXT",
-            "chunk_id TEXT",
         ]
         for field in self.fields:
             sql_type = TYPE_MAP[field.type]

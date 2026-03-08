@@ -56,7 +56,7 @@ class IngestionPipeline:
             for chunk in chunks:
                 metadata = self.extractor.extract(chunk.text, schema)
                 self.vector_store.add(chunk.doc_id, chunk.chunk_id, chunk.text, None, metadata)
-                self.relational_store.insert(chunk.doc_id, chunk.chunk_id, metadata)
+                self.relational_store.insert(chunk.doc_id, metadata)
 
             self.relational_store.set_document_hash(doc_id, content_hash)
 

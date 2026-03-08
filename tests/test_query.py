@@ -43,8 +43,8 @@ def sqlite_store(tmp_path) -> SQLiteRelationalStore:
         ]
     )
     store.initialize(schema)
-    store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
-    store.insert("doc2", "chunk2", {"author": "Bob", "year": 2024})
+    store.insert("doc1", {"author": "Alice", "year": 2023})
+    store.insert("doc2", {"author": "Bob", "year": 2024})
     return store
 
 
@@ -334,7 +334,7 @@ class TestSchemaLifecycle:
         # Simulate ingestion: initialize the relational store (creates the table)
         # and insert a row so the DB file exists with schema.
         rag1.relational_store.initialize(rag1.schema)
-        rag1.relational_store.insert("doc1", "chunk1", {"author": "Alice", "year": 2023})
+        rag1.relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         # Second instance: no schema provided, should reconstruct from DB
         rag2 = MetaRAG(
