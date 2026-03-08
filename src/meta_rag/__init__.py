@@ -62,6 +62,7 @@ class MetaRAG:
         # 3. Else remains None — auto-discover on first ingest()
         self.schema: MetadataSchema | None = None
         self.last_sql: str | None = None
+        self.last_history: list[dict] = []
         self._resolve_schema(schema)
 
     def _resolve_schema(self, schema: list[MetadataField] | None) -> None:
@@ -105,7 +106,7 @@ class MetaRAG:
 
         pipeline.ingest(paths, self.schema)
 
-    def query(self, question: str, evolve: bool = False) -> str:
+    def query(self, question: str, evolve: bool = False, history: list[dict] | None = None) -> str:
         """Ask a question — meta-rag handles routing automatically.
 
         If evolve=True, checks for schema gaps after answering and auto-adds
@@ -126,8 +127,9 @@ class MetaRAG:
             schema=self.schema,
         )
 
-        answer = query_pipeline.query(question)
+        answer = query_pipeline.query(question, history=history)
         self.last_sql = query_pipeline.last_sql
+        self.last_history = query_pipeline.messages
 
         if evolve:
             result = self._detect_schema_gap(question)

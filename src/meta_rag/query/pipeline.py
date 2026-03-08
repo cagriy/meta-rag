@@ -21,8 +21,9 @@ class QueryPipeline:
         self.schema = schema
         self.tools = schema.to_tool_definitions()
         self.last_sql: str | None = None
+        self.messages: list[dict] = []
 
-    def query(self, question: str) -> str:
+    def query(self, question: str, history: list[dict] | None = None) -> str:
         system_prompt = (
             "You are a helpful assistant that answers questions about a document collection. "
             "Use the available tools to find information. "
@@ -33,10 +34,10 @@ class QueryPipeline:
             "since stored values are full location or description strings."
         )
 
-        messages: list[dict] = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question},
-        ]
+        messages: list[dict] = [{"role": "system", "content": system_prompt}]
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": question})
 
         # First LLM call: decide whether to use tools
         response = self.client.chat.completions.create(
@@ -49,6 +50,8 @@ class QueryPipeline:
 
         # If the LLM answered directly without tools, return as-is
         if choice.finish_reason == "stop":
+            messages.append({"role": "assistant", "content": choice.message.content})
+            self.messages = messages[1:]  # strip system message for history
             return choice.message.content
 
         # Execute each tool call and collect results
@@ -116,6 +119,12 @@ class QueryPipeline:
                 model=self.model,
                 messages=messages,
             )
-            return final_response.choices[0].message.content
+            final_content = final_response.choices[0].message.content
+            messages.append({"role": "assistant", "content": final_content})
+            self.messages = messages[1:]  # strip system message for history
+            return final_content
 
-        return synthesis_choice.message.content
+        synthesis_content = synthesis_choice.message.content
+        messages.append({"role": "assistant", "content": synthesis_content})
+        self.messages = messages[1:]  # strip system message for history
+        return synthesis_content

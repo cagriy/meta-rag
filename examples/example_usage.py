@@ -9,11 +9,11 @@ This script demonstrates the core workflow of meta-rag:
 Requires: OPENAI_API_KEY environment variable set.
 
 Usage:
-    uv run python examples/example_usage.py [--verbose]
+    uv run python examples/example_usage.py [--verbose] [--test]
 """
 
+import argparse
 import os
-import sys
 
 from dotenv import load_dotenv
 
@@ -23,7 +23,11 @@ from meta_rag import MetaRAG, MetadataField
 
 
 def main():
-    verbose = "--verbose" in sys.argv
+    parser = argparse.ArgumentParser(description="meta-rag example")
+    parser.add_argument("--verbose", action="store_true", help="Print generated SQL")
+    parser.add_argument("--test", action="store_true", help="Run demo queries before interactive mode")
+    args = parser.parse_args()
+    verbose = args.verbose
     # ------------------------------------------------------------------
     # 1. Define the metadata schema
     #    Each MetadataField describes a piece of structured information
@@ -78,30 +82,27 @@ def main():
         print(f"Using existing data. Schema fields: {[f.name for f in rag.schema.fields]}")
 
     # ------------------------------------------------------------------
-    # 4. Query the system
-    #    meta-rag automatically routes each query:
-    #      - Qualitative questions  -> semantic / vector search
-    #      - Quantitative questions -> SQL over extracted metadata
-    #      - Filtered questions     -> combined approach
+    # 4. (Optional) Run demo queries — only when --test is passed
     # ------------------------------------------------------------------
-    questions = [
-        # Qualitative queries (semantic search)
-        "Tell me about Newton's contributions to physics",
-        "What did Marie Curie discover?",
-        # Quantitative queries (SQL)
-        "How many people in the dataset are from England?",
-        "What is the most common occupation?",
-        "What is the average birth year?",
-        # Filtered
-        "Who are the mathematicians in the collection?",
-    ]
+    if args.test:
+        questions = [
+            # Qualitative queries (semantic search)
+            "Tell me about Newton's contributions to physics",
+            "What did Marie Curie discover?",
+            # Quantitative queries (SQL)
+            "How many people in the dataset are from England?",
+            "What is the most common occupation?",
+            "What is the average birth year?",
+            # Filtered
+            "Who are the mathematicians in the collection?",
+        ]
 
-    for q in questions:
-        print(f"\nQ: {q}")
-        answer = rag.query(q)
-        print(f"A: {answer}")
-        if verbose and rag.last_sql:
-            print(f"SQL: {rag.last_sql}")
+        for q in questions:
+            print(f"\nQ: {q}")
+            answer = rag.query(q)
+            print(f"A: {answer}")
+            if verbose and rag.last_sql:
+                print(f"SQL: {rag.last_sql}")
 
     # ------------------------------------------------------------------
     # 5. Interactive query loop (with schema gap detection)
@@ -115,6 +116,8 @@ def main():
     print("  evolve=True is active: gaps trigger auto field addition.")
     print("  Type /backfill to populate newly added fields.")
     print("=" * 60)
+
+    conversation_history: list[dict] = []
 
     while True:
         try:
@@ -136,7 +139,8 @@ def main():
             result = rag.backfill(on_progress=_progress)
             print(f"\nBackfill complete. Populated: {result['populated']}  Pruned: {result['pruned']}")
             continue
-        answer = rag.query(question, evolve=True)
+        answer = rag.query(question, evolve=True, history=conversation_history)
+        conversation_history = rag.last_history
         print(f"A: {answer}")
         if verbose and rag.last_sql:
             print(f"SQL: {rag.last_sql}")
