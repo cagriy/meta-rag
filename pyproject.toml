@@ -1,0 +1,23 @@
+[project]
+name = "meta-rag"
+version = "0.1.2"
+description = "Extends RAG with structured query capabilities using dual vector + relational storage"
+readme = "README.md"
+authors = [
+    { name = "Cagri Yucel", email = "1134069+cagriy@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "openai",
+    "chromadb",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
