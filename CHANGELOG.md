@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-03-13
+
+### Added
+- `extraction_model` parameter on `MetaRAG` (defaults to `gpt-4o-mini`) — separates the model used for metadata extraction and schema discovery from the model used for query routing and schema gap detection
+- `--no-schema` and `--reset` flags added to the example script
+
+### Changed
+- Both `llm_model` and `extraction_model` now default to `gpt-4o-mini`
+- Metadata extraction now runs once per document instead of once per chunk, reducing LLM calls proportional to chunk count
+- `discover_schema` reads full document text instead of chunked samples; uses sqrt-scaled sampling (5–50 docs) instead of a fixed count
+- Available schema columns are injected into the query system prompt; LLM is instructed to fall back to `semantic_search` rather than approximate with an unrelated column when the required field is missing from the schema
+
 ## [0.1.2] - 2026-03-13
 
 ### Added

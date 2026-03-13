@@ -10,7 +10,7 @@ from meta_rag.schema import MetadataField, MetadataSchema
 class MetadataExtractor:
     """Extracts structured metadata from text using an LLM."""
 
-    def __init__(self, llm_model: str = "gpt-4o") -> None:
+    def __init__(self, llm_model: str = "gpt-4o-mini") -> None:
         self.client = openai.OpenAI()
         self.llm_model = llm_model
 

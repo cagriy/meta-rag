@@ -21,9 +21,11 @@ class QueryPipeline:
         self.schema = schema
         self.tools = schema.to_tool_definitions()
         self.last_sql: str | None = None
+        self.last_sql_returned_results: bool = False
         self.messages: list[dict] = []
 
     def query(self, question: str, history: list[dict] | None = None) -> str:
+        available_columns = ", ".join(f.name for f in self.schema.fields)
         system_prompt = (
             "You are a helpful assistant that answers questions about a document collection. "
             "Use the available tools to find information. "
@@ -31,7 +33,11 @@ class QueryPipeline:
             "For qualitative questions (descriptions, explanations), prefer semantic_search. "
             "When writing SQL for text fields, use LIKE with wildcards for partial matching "
             "(e.g. WHERE birthplace LIKE '%England%') rather than exact equality, "
-            "since stored values are full location or description strings."
+            "since stored values are full location or description strings.\n\n"
+            f"The available metadata columns are: {available_columns}. "
+            "IMPORTANT: Only reference these exact columns in SQL. "
+            "If the information needed to answer the question is not available as a column, "
+            "do NOT approximate with an unrelated column — use semantic_search instead."
         )
 
         messages: list[dict] = [{"role": "system", "content": system_prompt}]
@@ -56,6 +62,7 @@ class QueryPipeline:
 
         # Execute each tool call and collect results
         self.last_sql = None
+        self.last_sql_returned_results = False
         tool_results: list[dict] = []
         for tool_call in choice.message.tool_calls:
             name = tool_call.function.name
@@ -63,6 +70,8 @@ class QueryPipeline:
             if name == "run_sql":
                 self.last_sql = arguments.get("sql")
             result = self.tool_executor.execute(name, arguments)
+            if name == "run_sql" and result != "Query returned no rows.":
+                self.last_sql_returned_results = True
             tool_results.append(
                 {
                     "tool_call_id": tool_call.id,
@@ -100,6 +109,8 @@ class QueryPipeline:
                 if name == "run_sql":
                     self.last_sql = arguments.get("sql")
                 result = self.tool_executor.execute(name, arguments)
+                if name == "run_sql" and result != "Query returned no rows.":
+                    self.last_sql_returned_results = True
                 followup_results.append(
                     {
                         "tool_call_id": tool_call.id,

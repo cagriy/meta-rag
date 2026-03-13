@@ -1,6 +1,6 @@
-# meta-rag
+MetaRAG
 
-Extends RAG with structured query capabilities using dual vector + relational storage.
+Extends RAG with structured query capabilities using dual-mode retrieval (semantic + relational).
 
 ## The Problem
 
@@ -30,11 +30,14 @@ You define a list of `MetadataField` objects describing the structured data to e
 
 ## Key Features
 
-- **Dual-store routing** — LLM picks the right backend per question
-- **Auto schema discovery** — infer fields from document samples when no schema is provided
+- **Dual-mode routing** — LLM picks the right backend per question
+- **Auto schema discovery** — infer fields from full document samples (sqrt-scaled sampling) when no schema is provided
 - **Schema evolution** — detect missing fields mid-session (`evolve=True`) and add them live
 - **Incremental ingestion** — hash-based deduplication skips unchanged documents
+- **Per-document extraction** — metadata is extracted once per document (not per chunk), reducing LLM calls and cost
+- **Safe SQL generation** — available schema columns are injected into the system prompt; the LLM falls back to semantic search rather than approximating with unrelated columns
 - **Backfill** — populate newly added fields from already-stored chunks without re-ingesting
+- **Separate extraction model** — `llm_model` and `extraction_model` can be set independently; both default to `gpt-4o-mini`
 
 ## Installation
 
@@ -65,7 +68,8 @@ schema = [
 
 # 2. Initialize
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-4o-mini",          # query routing and schema gap detection
+    extraction_model="gpt-4o-mini",  # metadata extraction
     schema=schema,
     data_dir="./my_data",
 )
@@ -84,7 +88,7 @@ print(rag.query("What is the most common occupation?"))     # → SQL aggregatio
 
 ```python
 # No schema provided — meta-rag infers fields from a document sample on first ingest
-rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-4o-mini", data_dir="./my_data")
 rag.ingest("./documents/")
 print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occupation", ...]
 ```
@@ -126,6 +130,12 @@ uv run python examples/example_usage.py --test
 
 # Also print the generated SQL alongside each answer
 uv run python examples/example_usage.py --test --verbose
+
+# Skip the predefined schema — let MetaRAG auto-discover fields from documents
+uv run python examples/example_usage.py --no-schema
+
+# Delete existing data and re-ingest from scratch
+uv run python examples/example_usage.py --reset
 ```
 
 **Interactive mode commands:**
@@ -144,7 +154,8 @@ uv run python examples/example_usage.py --test --verbose
 
 ```python
 MetaRAG(
-    llm_model: str = "gpt-4o",
+    llm_model: str = "gpt-4o-mini",
+    extraction_model: str = "gpt-4o-mini",
     schema: list[MetadataField] | None = None,
     data_dir: str = "./meta_rag_data",
     chunk_size: int = 1000,
@@ -155,15 +166,16 @@ MetaRAG(
 ```
 
 
-| Parameter          | Default             | Description                                                              |
-| -------------------- | --------------------- | -------------------------------------------------------------------------- |
-| `llm_model`        | `"gpt-4o"`          | OpenAI model for extraction and querying                                 |
-| `schema`           | `None`              | List of`MetadataField`; auto-discovered on first ingest if omitted       |
-| `data_dir`         | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
-| `chunk_size`       | `1000`              | Max characters per text chunk                                            |
-| `chunk_overlap`    | `200`               | Character overlap between consecutive chunks                             |
-| `vector_store`     | `None`              | Custom`ChromaVectorStore` (default created in `data_dir` if omitted)     |
-| `relational_store` | `None`              | Custom`SQLiteRelationalStore` (default created in `data_dir` if omitted) |
+| Parameter           | Default             | Description                                                              |
+| --------------------- | --------------------- | -------------------------------------------------------------------------- |
+| `llm_model`         | `"gpt-4o-mini"`     | OpenAI model for query routing, SQL generation, and schema gap detection |
+| `extraction_model`  | `"gpt-4o-mini"`     | OpenAI model for metadata extraction and schema discovery                |
+| `schema`            | `None`              | List of`MetadataField`; auto-discovered on first ingest if omitted       |
+| `data_dir`          | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
+| `chunk_size`        | `1000`              | Max characters per text chunk                                            |
+| `chunk_overlap`     | `200`               | Character overlap between consecutive chunks                             |
+| `vector_store`      | `None`              | Custom`ChromaVectorStore` (default created in `data_dir` if omitted)     |
+| `relational_store`  | `None`              | Custom`SQLiteRelationalStore` (default created in `data_dir` if omitted) |
 
 ### `ingest(path, on_progress=None) → dict`
 

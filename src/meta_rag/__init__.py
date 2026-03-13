@@ -35,7 +35,8 @@ class MetaRAG:
 
     def __init__(
         self,
-        llm_model: str = "gpt-4o",
+        llm_model: str = "gpt-4o-mini",
+        extraction_model: str = "gpt-4o-mini",
         schema: list[MetadataField] | None = None,
         data_dir: str = "./meta_rag_data",
         chunk_size: int = 1000,
@@ -44,6 +45,7 @@ class MetaRAG:
         relational_store: SQLiteRelationalStore | None = None,
     ) -> None:
         self.llm_model = llm_model
+        self.extraction_model = extraction_model
         self.data_dir = data_dir
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -100,7 +102,7 @@ class MetaRAG:
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
         )
-        extractor = MetadataExtractor(llm_model=self.llm_model)
+        extractor = MetadataExtractor(llm_model=self.extraction_model)
         pipeline = IngestionPipeline(
             chunker=chunker,
             extractor=extractor,
@@ -253,7 +255,7 @@ class MetaRAG:
             return {"populated": [], "pruned": pruned}
 
         backfill_schema = MetadataSchema(fields=unpopulated)
-        extractor = MetadataExtractor(llm_model=self.llm_model)
+        extractor = MetadataExtractor(llm_model=self.extraction_model)
 
         total = len(all_chunks)
         for idx, (doc_id, chunk_id, text) in enumerate(all_chunks):

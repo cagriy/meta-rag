@@ -9,11 +9,12 @@ This script demonstrates the core workflow of meta-rag:
 Requires: OPENAI_API_KEY environment variable set.
 
 Usage:
-    uv run python examples/example_usage.py [--verbose] [--test]
+    uv run python examples/example_usage.py [--verbose] [--test] [--no-schema] [--reset]
 """
 
 import argparse
 import os
+import shutil
 
 from dotenv import load_dotenv
 
@@ -26,8 +27,14 @@ def main():
     parser = argparse.ArgumentParser(description="meta-rag example")
     parser.add_argument("--verbose", action="store_true", help="Print generated SQL")
     parser.add_argument("--test", action="store_true", help="Run demo queries before interactive mode")
+    parser.add_argument("--no-schema", action="store_true", help="Skip predefined schema; let MetaRAG discover fields from documents")
+    parser.add_argument("--reset", action="store_true", help="Delete existing data and re-ingest from scratch")
     args = parser.parse_args()
     verbose = args.verbose
+    if args.reset and os.path.exists("./example_data"):
+        shutil.rmtree("./example_data")
+        print("Reset: deleted existing example_data/")
+
     # ------------------------------------------------------------------
     # 1. Define the metadata schema
     #    Each MetadataField describes a piece of structured information
@@ -50,6 +57,10 @@ def main():
             description="Year the person was born",
         ),
     ]
+
+    if args.no_schema:
+        schema = None
+        print("No schema provided — MetaRAG will auto-discover fields from documents.")
 
     # ------------------------------------------------------------------
     # 2. Initialize MetaRAG
@@ -82,6 +93,10 @@ def main():
         stats = rag.ingest("examples/documents/", on_progress=_progress)
         print(f"\nDone. new={stats['new']}  changed={stats['changed']}  unchanged={stats['unchanged']}")
         print(f"Schema fields: {[f.name for f in rag.schema.fields]}")
+        if args.no_schema:
+            print("\nDiscovered schema fields:")
+            for f in rag.schema.fields:
+                print(f"  - {f.name} ({f.type}): {f.description}")
     else:
         print(f"Using existing data. Schema fields: {[f.name for f in rag.schema.fields]}")
 

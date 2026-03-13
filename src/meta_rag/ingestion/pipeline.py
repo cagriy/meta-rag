@@ -68,10 +68,10 @@ class IngestionPipeline:
                 self.relational_store.delete_document(doc_id)
 
                 chunks = self.chunker.chunk_file(file_path)
+                metadata = self.extractor.extract(content, schema)
                 for chunk in chunks:
-                    metadata = self.extractor.extract(chunk.text, schema)
                     self.vector_store.add(chunk.doc_id, chunk.chunk_id, chunk.text, None, metadata)
-                    self.relational_store.insert(chunk.doc_id, metadata)
+                self.relational_store.insert(doc_id, metadata)
 
                 self.relational_store.set_document_hash(doc_id, content_hash)
 
@@ -81,8 +81,18 @@ class IngestionPipeline:
         return {"unchanged": unchanged, "changed": changed, "new": new}
 
     def discover_schema(
-        self, paths: list[str | Path], sample_count: int = 5
+        self,
+        paths: list[str | Path],
+        sample_power: float = 0.5,
+        max_samples: int = 50,
     ) -> MetadataSchema:
-        chunks = self.chunker.chunk_paths(paths)
-        sample_texts = [chunk.text for chunk in chunks[:sample_count]]
+        files = self._expand_to_files(paths)
+        if not files:
+            raise ValueError("No documents found for schema discovery")
+
+        sample_count = max(5, min(max_samples, round(len(files) ** sample_power)))
+        step = max(1, len(files) // sample_count)
+        sampled_files = files[::step][:sample_count]
+
+        sample_texts = [Path(f).read_text(encoding="utf-8") for f in sampled_files]
         return self.extractor.discover_schema(sample_texts)
