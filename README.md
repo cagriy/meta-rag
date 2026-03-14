@@ -1,16 +1,28 @@
-MetaRAG
+# MetaRAG
 
-Extends RAG with structured query capabilities using dual-mode retrieval (semantic + relational).
+Imagine a corpus of documents with scientist biographies.
 
-## The Problem
+The traditional RAG works fine until you ask questions like:
 
-Structured queries over a document corpus require two things that traditional RAG does not provide:
+"Who was born before 1800?"
 
-**1. A schema defined upfront.** To answer aggregation questions ("How many people are from England?", "What is the average birth year?"), you need structured metadata in a relational store. That means deciding in advance which fields matter — before you fully understand your data. Get it wrong and you either re-ingest everything or can't answer the query at all.
+"How many are mathematicians?"
 
-**2. Ongoing schema learning.** As users ask new kinds of questions, the right schema evolves. Traditional RAG solutions have no mechanism to detect that a query requires a field that doesn't exist yet, add it, and retroactively populate it from already-ingested documents. Every gap requires a manual schema change and a full re-ingest.
+"List names and birthdays for mathematicians"
 
-meta-rag addresses both: it can auto-discover an initial schema from your documents, and it continuously monitors queries for schema gaps — adding fields and backfilling them from stored chunks without re-ingesting source files.
+These result in an incomplete answer due to top-k with no signs of incompleteness.
+
+For a static, one-off corpus it is possible to improve this problem by extracting metadata for a predetermined set of fields. This approach has two problems:
+
+1. One has to predict all the questions that can be asked against the corpus upfront.
+2. Constantly revising that prediction as the documents change, e.g. adding nobel prizes to the documents later, or extending the document set to contain artists.
+
+MetaRAG solves both problems by:
+
+1. An initial metadata (schema) discovery before the first ingestion
+2. Self-update schema with candidate fields when it fails to answer a question
+
+A periodic "backfill" method then extract and populates the candidate fields, or prunes them if the information is not contained within the corpus. If the backfill is running nightly, a question that has failed today, gets answered correctly tomorrow.
 
 ## How It Works
 
@@ -26,18 +38,15 @@ At query time, an LLM uses **tool-calling** to decide which backend to hit — o
 
 ### Schema
 
-You define a list of `MetadataField` objects describing the structured data to extract from each document. The LLM extracts those fields during ingestion and stores them in SQLite. If you skip the schema, meta-rag auto-discovers one by sampling a few documents.
+MetaRAG allows you define an initial schema, if you prefer to cover the most predictable fields and let the rest evolve based on user queries. If you skip the schema, meta-rag auto-discovers one by sampling a configurable subset of documents.
 
 ## Key Features
 
-- **Dual-mode routing** — LLM picks the right backend per question
-- **Auto schema discovery** — infer fields from full document samples (sqrt-scaled sampling) when no schema is provided
+- **Dual-store routing** — LLM picks the right backend per question
+- **Auto schema discovery** — infer fields from document samples when no schema is provided
 - **Schema evolution** — detect missing fields mid-session (`evolve=True`) and add them live
 - **Incremental ingestion** — hash-based deduplication skips unchanged documents
-- **Per-document extraction** — metadata is extracted once per document (not per chunk), reducing LLM calls and cost
-- **Safe SQL generation** — available schema columns are injected into the system prompt; the LLM falls back to semantic search rather than approximating with unrelated columns
 - **Backfill** — populate newly added fields from already-stored chunks without re-ingesting
-- **Separate extraction model** — `llm_model` and `extraction_model` can be set independently; both default to `gpt-4o-mini`
 
 ## Installation
 
@@ -68,8 +77,7 @@ schema = [
 
 # 2. Initialize
 rag = MetaRAG(
-    llm_model="gpt-4o-mini",          # query routing and schema gap detection
-    extraction_model="gpt-4o-mini",  # metadata extraction
+    llm_model="gpt-4o",
     schema=schema,
     data_dir="./my_data",
 )
@@ -88,7 +96,7 @@ print(rag.query("What is the most common occupation?"))     # → SQL aggregatio
 
 ```python
 # No schema provided — meta-rag infers fields from a document sample on first ingest
-rag = MetaRAG(llm_model="gpt-4o-mini", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
 rag.ingest("./documents/")
 print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occupation", ...]
 ```
@@ -130,12 +138,6 @@ uv run python examples/example_usage.py --test
 
 # Also print the generated SQL alongside each answer
 uv run python examples/example_usage.py --test --verbose
-
-# Skip the predefined schema — let MetaRAG auto-discover fields from documents
-uv run python examples/example_usage.py --no-schema
-
-# Delete existing data and re-ingest from scratch
-uv run python examples/example_usage.py --reset
 ```
 
 **Interactive mode commands:**
@@ -155,7 +157,6 @@ uv run python examples/example_usage.py --reset
 ```python
 MetaRAG(
     llm_model: str = "gpt-4o-mini",
-    extraction_model: str = "gpt-4o-mini",
     schema: list[MetadataField] | None = None,
     data_dir: str = "./meta_rag_data",
     chunk_size: int = 1000,
@@ -166,16 +167,15 @@ MetaRAG(
 ```
 
 
-| Parameter           | Default             | Description                                                              |
-| --------------------- | --------------------- | -------------------------------------------------------------------------- |
-| `llm_model`         | `"gpt-4o-mini"`     | OpenAI model for query routing, SQL generation, and schema gap detection |
-| `extraction_model`  | `"gpt-4o-mini"`     | OpenAI model for metadata extraction and schema discovery                |
-| `schema`            | `None`              | List of`MetadataField`; auto-discovered on first ingest if omitted       |
-| `data_dir`          | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
-| `chunk_size`        | `1000`              | Max characters per text chunk                                            |
-| `chunk_overlap`     | `200`               | Character overlap between consecutive chunks                             |
-| `vector_store`      | `None`              | Custom`ChromaVectorStore` (default created in `data_dir` if omitted)     |
-| `relational_store`  | `None`              | Custom`SQLiteRelationalStore` (default created in `data_dir` if omitted) |
+| Parameter          | Default             | Description                                                              |
+| -------------------- | --------------------- | -------------------------------------------------------------------------- |
+| `llm_model`        | `"gpt-4o"`          | OpenAI model for extraction and querying                                 |
+| `schema`           | `None`              | List of`MetadataField`; auto-discovered on first ingest if omitted       |
+| `data_dir`         | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
+| `chunk_size`       | `1000`              | Max characters per text chunk                                            |
+| `chunk_overlap`    | `200`               | Character overlap between consecutive chunks                             |
+| `vector_store`     | `None`              | Custom`ChromaVectorStore` (default created in `data_dir` if omitted)     |
+| `relational_store` | `None`              | Custom`SQLiteRelationalStore` (default created in `data_dir` if omitted) |
 
 ### `ingest(path, on_progress=None) → dict`
 
@@ -206,23 +206,3 @@ Returns `{"populated": [field names], "pruned": [field names]}`.
 ### `add_field(field: MetadataField) → None`
 
 Add a new field to the live schema and the SQLite database. Call `backfill()` afterward to populate it from existing documents.
-
-## Project Structure
-
-```
-src/meta_rag/
-├── __init__.py          # MetaRAG facade — public API
-├── schema.py            # MetadataField, MetadataSchema, SchemaEvolutionResult
-├── ingestion/
-│   ├── chunker.py       # Text splitting
-│   ├── extractor.py     # LLM metadata extraction
-│   └── pipeline.py      # Ingestion orchestration + schema discovery
-├── query/
-│   ├── pipeline.py      # Query orchestration + tool-call loop
-│   ├── executor.py      # Tool execution (semantic_search, run_sql)
-│   └── tools.py         # Tool definitions
-└── stores/
-    ├── base.py          # SearchResult dataclass
-    ├── vector.py        # ChromaDB vector store
-    └── relational.py    # SQLite relational store
-```
