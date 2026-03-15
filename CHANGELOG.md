@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-03-15
+
+### Added
+- Full document retrieval for semantic search — when a chunk matches, all chunks from the same document are fetched, ordered by `chunk_index`, and the complete document text is returned to the LLM
+- `chunk_index` and `total_chunks` stored as metadata on every chunk for correct document reconstruction
+- `get_document_chunks()` method on vector store to retrieve all chunks for a given document
+- Three new multi-chunk example documents (Faraday, Hypatia, Ramanujan) demonstrating cross-chunk retrieval
+
+### Changed
+- Semantic search results now return full reconstructed documents instead of 500-character truncated snippets
+- Schema gap detection prompt tightened to avoid flagging content questions (e.g. "Who discovered X?") as schema gaps when they are well-served by semantic search
+
 ## [0.1.3] - 2026-03-13
 
 ### Added
