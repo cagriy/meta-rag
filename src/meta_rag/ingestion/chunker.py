@@ -9,6 +9,8 @@ class Chunk:
     doc_id: str
     chunk_id: str
     text: str
+    chunk_index: int = 0
+    total_chunks: int = 1
 
 
 class Chunker:
@@ -19,7 +21,7 @@ class Chunker:
     def chunk_text(self, text: str, doc_id: str) -> list[Chunk]:
         """Split text by character count with overlap."""
         if len(text) <= self.chunk_size:
-            return [Chunk(doc_id=doc_id, chunk_id=f"{doc_id}_chunk_0", text=text)]
+            return [Chunk(doc_id=doc_id, chunk_id=f"{doc_id}_chunk_0", text=text, chunk_index=0, total_chunks=1)]
 
         chunks: list[Chunk] = []
         step = self.chunk_size - self.chunk_overlap
@@ -32,10 +34,14 @@ class Chunker:
                     doc_id=doc_id,
                     chunk_id=f"{doc_id}_chunk_{idx}",
                     text=chunk_text,
+                    chunk_index=idx,
                 )
             )
             idx += 1
             i += step
+
+        for chunk in chunks:
+            chunk.total_chunks = len(chunks)
 
         return chunks
 

@@ -294,6 +294,8 @@ class TestQueryWithEvolve:
                     "type": "text",
                     "description": "Main research interests",
                 },
+                "message": "The system has identified new information it can learn from your documents. More precise answers will be available soon.",
+                "unavailable_message": "This question can't be answered precisely right now because the required data hasn't been indexed yet. Please check back later for more precise results.",
             })
         )
         mock_evolve_client.chat.completions.create.return_value = gap_response
@@ -307,8 +309,7 @@ class TestQueryWithEvolve:
 
         answer = rag.query("What are the research interests?", evolve=True)
 
-        assert "[Schema Gap Detected]" in answer
-        assert "research_interests" in answer
+        assert "check back later" in answer
         field_names = [f.name for f in rag.schema.fields]
         assert "research_interests" in field_names
 
@@ -374,6 +375,8 @@ class TestDetectSchemaGap:
                     "type": "text",
                     "description": "Main research areas",
                 },
+                "message": "The system has identified new information it can learn from your documents. More precise answers will be available soon.",
+                "unavailable_message": "This question can't be answered precisely right now because the required data hasn't been indexed yet. Please check back later.",
             })
         )
 
@@ -389,7 +392,8 @@ class TestDetectSchemaGap:
         assert result.gap_detected is True
         assert result.proposed_field is not None
         assert result.proposed_field.name == "research_interests"
-        assert "[Schema Gap Detected]" in result.message
+        assert result.message != ""
+        assert result.unavailable_message != ""
 
     @patch("meta_rag.__init__.openai.OpenAI")
     def test_no_gap_detected(self, mock_openai_cls, tmp_path):
@@ -406,6 +410,8 @@ class TestDetectSchemaGap:
                 "gap_detected": False,
                 "reasoning": "author field already exists",
                 "proposed_field": None,
+                "message": "",
+                "unavailable_message": "",
             })
         )
 
@@ -421,6 +427,7 @@ class TestDetectSchemaGap:
         assert result.gap_detected is False
         assert result.proposed_field is None
         assert result.message == ""
+        assert result.unavailable_message == ""
 
 
 # ===========================================================================

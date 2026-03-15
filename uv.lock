@@ -710,7 +710,7 @@ wheels = [
 
 [[package]]
 name = "meta-rag"
-version = "0.1.2"
+version = "0.1.4"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },

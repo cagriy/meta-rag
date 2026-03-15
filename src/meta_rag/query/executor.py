@@ -63,14 +63,24 @@ class ToolExecutor:
         if not results:
             return "No results found."
 
+        # Group matched chunks by doc_id, keeping best score and chunk ids
+        doc_matches: dict[str, dict] = {}
+        for result in results:
+            doc_id = result.doc_id
+            if doc_id not in doc_matches:
+                doc_matches[doc_id] = {"score": result.score, "chunks": []}
+            doc_matches[doc_id]["score"] = max(doc_matches[doc_id]["score"], result.score)
+            doc_matches[doc_id]["chunks"].append(result.chunk_id)
+
+        # Reconstruct full documents
         parts: list[str] = []
-        for i, result in enumerate(results, start=1):
-            snippet = result.text[:500]
-            if len(result.text) > 500:
-                snippet += "..."
+        for i, (doc_id, info) in enumerate(doc_matches.items(), start=1):
+            all_chunks = self.vector_store.get_document_chunks(doc_id)
+            full_text = "".join(chunk.text for chunk in all_chunks)
+            matched = ", ".join(info["chunks"])
             parts.append(
-                f"[{i}] chunk_id={result.chunk_id}  score={result.score:.4f}\n"
-                f"    {snippet}"
+                f"[{i}] doc_id={doc_id}  score={info['score']:.4f}  matched_chunks=({matched})\n"
+                f"{full_text}"
             )
         return "\n\n".join(parts)
 

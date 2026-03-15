@@ -4,6 +4,7 @@ import json
 
 import openai
 
+from meta_rag.prompts import DEFAULT_QUERY_SYSTEM_PROMPT
 from meta_rag.query.executor import ToolExecutor
 from meta_rag.schema import MetadataSchema
 
@@ -14,30 +15,25 @@ class QueryPipeline:
         llm_model: str,
         tool_executor: ToolExecutor,
         schema: MetadataSchema,
+        query_system_prompt: str = DEFAULT_QUERY_SYSTEM_PROMPT,
+        fallback: bool = False,
     ) -> None:
         self.client = openai.OpenAI()
         self.model = llm_model
         self.tool_executor = tool_executor
         self.schema = schema
         self.tools = schema.to_tool_definitions()
+        self.query_system_prompt = query_system_prompt
+        self.fallback = fallback
         self.last_sql: str | None = None
         self.last_sql_returned_results: bool = False
+        self.last_fell_back: bool = False
         self.messages: list[dict] = []
 
     def query(self, question: str, history: list[dict] | None = None) -> str:
         available_columns = ", ".join(f.name for f in self.schema.fields)
-        system_prompt = (
-            "You are a helpful assistant that answers questions about a document collection. "
-            "Use the available tools to find information. "
-            "For quantitative questions (counts, averages, comparisons), prefer run_sql. "
-            "For qualitative questions (descriptions, explanations), prefer semantic_search. "
-            "When writing SQL for text fields, use LIKE with wildcards for partial matching "
-            "(e.g. WHERE birthplace LIKE '%England%') rather than exact equality, "
-            "since stored values are full location or description strings.\n\n"
-            f"The available metadata columns are: {available_columns}. "
-            "IMPORTANT: Only reference these exact columns in SQL. "
-            "If the information needed to answer the question is not available as a column, "
-            "do NOT approximate with an unrelated column — use semantic_search instead."
+        system_prompt = self.query_system_prompt.format(
+            available_columns=available_columns,
         )
 
         messages: list[dict] = [{"role": "system", "content": system_prompt}]
@@ -63,6 +59,7 @@ class QueryPipeline:
         # Execute each tool call and collect results
         self.last_sql = None
         self.last_sql_returned_results = False
+        self.last_fell_back = False
         tool_results: list[dict] = []
         for tool_call in choice.message.tool_calls:
             name = tool_call.function.name
@@ -100,8 +97,31 @@ class QueryPipeline:
         synthesis_choice = synthesis_response.choices[0]
 
         # If the LLM wants to make one more tool call (e.g. SQL returned empty,
-        # falling back to semantic_search), execute it and do a final synthesis
+        # falling back to semantic_search), decide whether to allow it
         if synthesis_choice.finish_reason == "tool_calls":
+            sql_failed = self.last_sql is not None and not self.last_sql_returned_results
+
+            if sql_failed and not self.fallback:
+                # Block the fallback — ask LLM to explain without tools
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": "The SQL query returned no results.",
+                    }
+                )
+                final_response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                )
+                final_content = final_response.choices[0].message.content
+                messages.append({"role": "assistant", "content": final_content})
+                self.messages = messages[1:]  # strip system message for history
+                return final_content
+
+            # Allow the follow-up tool call(s)
+            if sql_failed:
+                self.last_fell_back = True
+
             followup_results: list[dict] = []
             for tool_call in synthesis_choice.message.tool_calls:
                 name = tool_call.function.name

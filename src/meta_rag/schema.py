@@ -20,6 +20,7 @@ class SchemaEvolutionResult:
     reasoning: str
     proposed_field: MetadataField | None
     message: str  # user-facing message
+    unavailable_message: str  # user-facing message when data isn't available yet
 
 
 TYPE_MAP = {

@@ -287,6 +287,184 @@ class TestQueryPipeline:
         assert mock_client.chat.completions.create.call_count == 1
         mock_executor.execute.assert_not_called()
 
+    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    def test_fallback_false_blocks_semantic_fallback(
+        self, mock_openai_cls, sample_schema: MetadataSchema
+    ):
+        """When SQL returns no rows and fallback=False, semantic_search follow-up is blocked."""
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        # First call: LLM chooses run_sql
+        sql_tool_call = _make_tool_call(
+            tool_call_id="call_sql",
+            name="run_sql",
+            arguments={"sql": "SELECT * FROM documents_metadata WHERE year > 1900;"},
+        )
+        first_response = _make_openai_response(
+            finish_reason="tool_calls", tool_calls=[sql_tool_call]
+        )
+
+        # Second call: LLM wants to fall back to semantic_search
+        search_tool_call = _make_tool_call(
+            tool_call_id="call_search",
+            name="semantic_search",
+            arguments={"query": "died after 1900"},
+        )
+        second_response = _make_openai_response(
+            finish_reason="tool_calls", tool_calls=[search_tool_call]
+        )
+
+        # Third call: LLM explains the data isn't available
+        third_response = _make_openai_response(
+            finish_reason="stop",
+            content="This question cannot be answered precisely yet.",
+        )
+
+        mock_client.chat.completions.create.side_effect = [
+            first_response,
+            second_response,
+            third_response,
+        ]
+
+        mock_executor = MagicMock()
+        mock_executor.execute.return_value = "Query returned no rows."
+
+        pipeline = QueryPipeline(
+            llm_model="gpt-4o",
+            tool_executor=mock_executor,
+            schema=sample_schema,
+            fallback=False,
+        )
+
+        answer = pipeline.query("Who died after 1900?")
+
+        assert answer == "This question cannot be answered precisely yet."
+        # Only the SQL call should have been executed, not the semantic_search
+        mock_executor.execute.assert_called_once_with(
+            "run_sql",
+            {"sql": "SELECT * FROM documents_metadata WHERE year > 1900;"},
+        )
+        assert pipeline.last_fell_back is False
+
+    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    def test_fallback_true_allows_fallback_and_sets_flag(
+        self, mock_openai_cls, sample_schema: MetadataSchema
+    ):
+        """When SQL returns no rows and fallback=True, semantic_search follow-up proceeds."""
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        # First call: LLM chooses run_sql
+        sql_tool_call = _make_tool_call(
+            tool_call_id="call_sql",
+            name="run_sql",
+            arguments={"sql": "SELECT * FROM documents_metadata WHERE year > 1900;"},
+        )
+        first_response = _make_openai_response(
+            finish_reason="tool_calls", tool_calls=[sql_tool_call]
+        )
+
+        # Second call: LLM wants to fall back to semantic_search
+        search_tool_call = _make_tool_call(
+            tool_call_id="call_search",
+            name="semantic_search",
+            arguments={"query": "died after 1900"},
+        )
+        second_response = _make_openai_response(
+            finish_reason="tool_calls", tool_calls=[search_tool_call]
+        )
+
+        # Third call: LLM synthesizes from semantic results
+        third_response = _make_openai_response(
+            finish_reason="stop",
+            content="Based on text search: Marie Curie, Alan Turing, Nikola Tesla.",
+        )
+
+        mock_client.chat.completions.create.side_effect = [
+            first_response,
+            second_response,
+            third_response,
+        ]
+
+        mock_executor = MagicMock()
+        mock_executor.execute.side_effect = [
+            "Query returned no rows.",  # SQL result
+            "chunk1: Marie Curie died in 1934...",  # semantic_search result
+        ]
+
+        pipeline = QueryPipeline(
+            llm_model="gpt-4o",
+            tool_executor=mock_executor,
+            schema=sample_schema,
+            fallback=True,
+        )
+
+        answer = pipeline.query("Who died after 1900?")
+
+        assert answer == "Based on text search: Marie Curie, Alan Turing, Nikola Tesla."
+        assert mock_executor.execute.call_count == 2
+        assert pipeline.last_fell_back is True
+
+    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    def test_fallback_false_does_not_block_non_sql_followup(
+        self, mock_openai_cls, sample_schema: MetadataSchema
+    ):
+        """When the first tool is semantic_search (not failed SQL), follow-up is allowed even with fallback=False."""
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        # First call: LLM chooses semantic_search
+        search_tool_call = _make_tool_call(
+            tool_call_id="call_search",
+            name="semantic_search",
+            arguments={"query": "Marie Curie"},
+        )
+        first_response = _make_openai_response(
+            finish_reason="tool_calls", tool_calls=[search_tool_call]
+        )
+
+        # Second call: LLM wants a follow-up SQL query
+        sql_tool_call = _make_tool_call(
+            tool_call_id="call_sql",
+            name="run_sql",
+            arguments={"sql": "SELECT year FROM documents_metadata WHERE author LIKE '%Curie%';"},
+        )
+        second_response = _make_openai_response(
+            finish_reason="tool_calls", tool_calls=[sql_tool_call]
+        )
+
+        # Third call: LLM synthesizes
+        third_response = _make_openai_response(
+            finish_reason="stop",
+            content="Marie Curie was born in 1867.",
+        )
+
+        mock_client.chat.completions.create.side_effect = [
+            first_response,
+            second_response,
+            third_response,
+        ]
+
+        mock_executor = MagicMock()
+        mock_executor.execute.side_effect = [
+            "chunk1: Marie Curie biography...",  # semantic_search result
+            json.dumps([{"year": 1867}]),  # SQL result
+        ]
+
+        pipeline = QueryPipeline(
+            llm_model="gpt-4o",
+            tool_executor=mock_executor,
+            schema=sample_schema,
+            fallback=False,
+        )
+
+        answer = pipeline.query("When was Marie Curie born?")
+
+        assert answer == "Marie Curie was born in 1867."
+        assert mock_executor.execute.call_count == 2
+        assert pipeline.last_fell_back is False
+
 
 # ---------------------------------------------------------------------------
 # Integration test — Schema lifecycle

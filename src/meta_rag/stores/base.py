@@ -51,6 +51,9 @@ class VectorStore(ABC):
     @abstractmethod
     def update_metadata(self, chunk_id: str, metadata: dict) -> None: ...
 
+    @abstractmethod
+    def get_document_chunks(self, doc_id: str) -> list[SearchResult]: ...
+
 
 class RelationalStore(ABC):
     @abstractmethod

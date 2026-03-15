@@ -90,6 +90,27 @@ class ChromaVectorStore(VectorStore):
             chunks.append((doc_id, chunk_id, text))
         return chunks
 
+    def get_document_chunks(self, doc_id: str) -> list[SearchResult]:
+        result = self.collection.get(
+            where={"doc_id": doc_id},
+            include=["documents", "metadatas"],
+        )
+        chunks: list[SearchResult] = []
+        for chunk_id, text, metadata in zip(
+            result["ids"], result["documents"], result["metadatas"]
+        ):
+            chunks.append(
+                SearchResult(
+                    doc_id=doc_id,
+                    chunk_id=chunk_id,
+                    text=text,
+                    metadata=metadata,
+                    score=0.0,
+                )
+            )
+        chunks.sort(key=lambda c: c.metadata.get("chunk_index", 0))
+        return chunks
+
     def update_metadata(self, chunk_id: str, metadata: dict) -> None:
         result = self.collection.get(ids=[chunk_id], include=["metadatas"])
         if not result["ids"]:

@@ -45,6 +45,7 @@ MetaRAG allows you define an initial schema, if you prefer to cover the most pre
 - **Dual-store routing** — LLM picks the right backend per question
 - **Auto schema discovery** — infer fields from document samples when no schema is provided
 - **Schema evolution** — detect missing fields mid-session (`evolve=True`) and add them live
+- **Controlled fallback** — blocks incomplete semantic search answers for aggregate questions; SQL failures prompt schema evolution instead of silent top-k fallback
 - **Incremental ingestion** — hash-based deduplication skips unchanged documents
 - **Backfill** — populate newly added fields from already-stored chunks without re-ingesting
 
@@ -104,14 +105,22 @@ print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occup
 ### Schema evolution
 
 ```python
-# Pass evolve=True to detect and add missing fields on the fly
+# By default, if SQL can't answer a question (missing column), MetaRAG won't
+# fall back to semantic search — avoiding misleading partial answers.
 answer = rag.query("How many people died before 1900?", evolve=True)
-# answer may include:
-# [Schema Gap Detected] 'year_of_death' has been added. Run backfill() to populate it.
+# → explains the data isn't available yet as structured metadata
+# → [Schema Gap Detected] 'year_of_death' has been added. Run backfill() to populate it.
 
 # Populate the new field from all stored chunks
 result = rag.backfill()
 print(result)  # {"populated": ["year_of_death"], "pruned": []}
+
+# Now the same query works precisely via SQL
+answer = rag.query("How many people died before 1900?")
+
+# If you prefer partial answers over no answer, enable fallback:
+answer = rag.query("How many people died before 1900?", fallback=True)
+# → returns top-k semantic results with a warning about incompleteness
 ```
 
 ### Add a field manually
@@ -186,12 +195,13 @@ Ingest a file path or list of paths. Skips unchanged documents (hash-based). Aut
 
 Returns `{"new": int, "changed": int, "unchanged": int}`.
 
-### `query(question, evolve=False, history=None) → str`
+### `query(question, evolve=False, history=None, fallback=False) → str`
 
 Ask a question. The LLM routes to semantic search, SQL, or both.
 
 - `evolve=True` — after answering, check for schema gaps and add detected fields automatically
 - `history` — list of prior `{"role": ..., "content": ...}` messages for multi-turn conversation
+- `fallback=False` — when SQL fails (missing column or no rows), block fallback to semantic search to avoid incomplete answers. Set to `True` to allow the fallback with an incompleteness warning appended
 
 Use `rag.last_history` to get the updated history after each call for follow-up questions. Use `rag.last_sql` to inspect the SQL that was generated (if any).
 

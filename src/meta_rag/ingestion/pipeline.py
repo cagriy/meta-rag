@@ -70,7 +70,12 @@ class IngestionPipeline:
                 chunks = self.chunker.chunk_file(file_path)
                 metadata = self.extractor.extract(content, schema)
                 for chunk in chunks:
-                    self.vector_store.add(chunk.doc_id, chunk.chunk_id, chunk.text, None, metadata)
+                    chunk_metadata = {
+                        **metadata,
+                        "chunk_index": chunk.chunk_index,
+                        "total_chunks": chunk.total_chunks,
+                    }
+                    self.vector_store.add(chunk.doc_id, chunk.chunk_id, chunk.text, None, chunk_metadata)
                 self.relational_store.insert(doc_id, metadata)
 
                 self.relational_store.set_document_hash(doc_id, content_hash)

@@ -4,15 +4,23 @@ import json
 
 import openai
 
+from meta_rag.prompts import DEFAULT_METADATA_EXTRACTION_PROMPT, DEFAULT_SCHEMA_DISCOVERY_PROMPT
 from meta_rag.schema import MetadataField, MetadataSchema
 
 
 class MetadataExtractor:
     """Extracts structured metadata from text using an LLM."""
 
-    def __init__(self, llm_model: str = "gpt-4o-mini") -> None:
+    def __init__(
+        self,
+        llm_model: str = "gpt-4o-mini",
+        extraction_prompt: str = DEFAULT_METADATA_EXTRACTION_PROMPT,
+        discovery_prompt: str = DEFAULT_SCHEMA_DISCOVERY_PROMPT,
+    ) -> None:
         self.client = openai.OpenAI()
         self.llm_model = llm_model
+        self.extraction_prompt = extraction_prompt
+        self.discovery_prompt = discovery_prompt
 
     def extract(self, text: str, schema: MetadataSchema) -> dict:
         """Extract metadata fields from a text chunk according to the given schema.
@@ -24,11 +32,8 @@ class MetadataExtractor:
         Returns:
             A dictionary mapping field names to their extracted values.
         """
-        system_message = (
-            "You are a metadata extraction assistant. "
-            "Extract the following fields from the given text. "
-            "Return valid JSON. Use null for fields not found.\n\n"
-            + schema.to_extraction_prompt()
+        system_message = self.extraction_prompt.format(
+            extraction_fields=schema.to_extraction_prompt(),
         )
 
         response = self.client.chat.completions.create(
@@ -68,13 +73,7 @@ class MetadataExtractor:
         Returns:
             A MetadataSchema describing the discovered fields.
         """
-        system_message = (
-            "You are a metadata schema discovery assistant. "
-            "Analyze the following document samples and propose structured metadata "
-            "fields that can be extracted. Return a JSON object with a 'fields' array, "
-            "where each field has 'name' (snake_case), 'type' ('text' or 'integer'), "
-            "and 'description'."
-        )
+        system_message = self.discovery_prompt
 
         numbered_samples = "\n\n".join(
             f"--- Sample {i + 1} ---\n{text}" for i, text in enumerate(sample_texts)

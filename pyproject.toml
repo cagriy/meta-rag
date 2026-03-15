@@ -1,6 +1,6 @@
 [project]
 name = "meta-rag"
-version = "0.1.3"
+version = "0.1.5"
 description = "Extends RAG with structured query capabilities using dual vector + relational storage"
 readme = "README.md"
 authors = [
