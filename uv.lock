@@ -710,7 +710,7 @@ wheels = [
 
 [[package]]
 name = "meta-rag"
-version = "0.1.4"
+version = "0.1.5"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },
@@ -722,6 +722,9 @@ dependencies = [
 dev = [
     { name = "pytest" },
 ]
+eval = [
+    { name = "pyyaml" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -732,6 +735,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest" }]
+eval = [{ name = "pyyaml" }]
 
 [[package]]
 name = "mmh3"

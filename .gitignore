@@ -11,6 +11,7 @@ wheels/
 
 # Data directories (generated at runtime)
 example_data/
+eval_data/
 data/
 
 # Environment variables
