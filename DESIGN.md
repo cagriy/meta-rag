@@ -51,7 +51,7 @@ The result: a single library that answers both "tell me about Newton" and "how m
 │                    Consumer Application                  │
 │                                                          │
 │   from meta_rag import MetaRAG                          │
-│   rag = MetaRAG(llm_model="gpt-4o")                    │
+│   rag = MetaRAG(llm_model="gpt-5-mini")                    │
 │   rag.ingest("docs/")                                   │
 │   answer = rag.query("How many people from England?")   │
 └─────────────────┬───────────────────────────────────────┘
@@ -104,11 +104,11 @@ For production deployments with large datasets or multiple frontends accessing t
 
 ```python
 # Development / small scale (default — embedded, zero config)
-rag = MetaRAG(llm_model="gpt-4o")
+rag = MetaRAG(llm_model="gpt-5-mini")
 
 # Production / multi-frontend (future)
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     vector_store=PgVectorStore(url="postgresql://..."),
     relational_store=PgRelationalStore(url="postgresql://..."),
 )
@@ -180,7 +180,7 @@ Before the first ingestion, the schema can come from one of two places:
 **Option A — Auto-discovery (default):** The library samples a few documents and asks the LLM to propose a schema. The user provides nothing — the library figures it out.
 
 ```python
-rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_data")
 rag.ingest("path/to/biographies/")
 
 # Internally at the start of ingest():
@@ -198,7 +198,7 @@ rag.ingest("path/to/biographies/")
 from meta_rag import MetaRAG, MetadataField
 
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     data_dir="./my_data",
     schema=[
         MetadataField(name="birthplace", type="text", description="Person's place of birth"),
@@ -217,7 +217,7 @@ After the first ingestion, the schema lives in the database. The user just point
 
 ```python
 # No schema needed — read from the existing database
-rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_data")
 rag.query("How many people are from England?")
 rag.query("What is the most common occupation?")
 
@@ -341,7 +341,7 @@ class MyPgVectorStore(VectorStore):
     # ... implement abstract methods
 
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     vector_store=MyPgVectorStore("postgresql://localhost/mydb"),
 )
 ```
@@ -388,7 +388,7 @@ Documents are split into manageable chunks before processing:
 
 ```python
 # Default: split by character count with overlap
-rag = MetaRAG(llm_model="gpt-4o", chunk_size=1000, chunk_overlap=200)
+rag = MetaRAG(llm_model="gpt-5-mini", chunk_size=1000, chunk_overlap=200)
 ```
 
 ### Metadata Extraction
@@ -614,7 +614,7 @@ from meta_rag import MetaRAG
 
 # First run — no existing data, no schema provided
 # Auto-discovery will analyze documents and propose a schema
-rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_data")
 
 # Ingest documents — schema is discovered, then metadata extracted
 rag.ingest("./documents/")
@@ -636,7 +636,7 @@ print(rag.query("What is the most common birthplace?"))
 from meta_rag import MetaRAG
 
 # Later session — schema is loaded from the existing database automatically
-rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_data")
 
 # No need to re-ingest or re-specify schema — just query
 print(rag.query("What percentage of people are physicists?"))
@@ -649,7 +649,7 @@ from meta_rag import MetaRAG, MetadataField
 
 # First run — user provides schema explicitly
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     schema=[
         MetadataField(name="birthplace", type="text", description="Person's place of birth"),
         MetadataField(name="occupation", type="text", description="Primary occupation"),
@@ -666,7 +666,7 @@ answer = rag.query("What is the average birth year of all scientists?")
 print(answer)
 
 # On next run, just:
-# rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_rag_data")
+# rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_rag_data")
 # rag.query(...)  — schema is read from the database
 ```
 
@@ -680,7 +680,7 @@ app = FastAPI()
 
 # Initialize once at startup
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     schema=[
         MetadataField(name="birthplace", type="text", description="Person's place of birth"),
         MetadataField(name="occupation", type="text", description="Primary occupation"),
@@ -722,7 +722,7 @@ async def query(question: str):
 from meta_rag import MetaRAG
 
 def main():
-    rag = MetaRAG(llm_model="gpt-4o", data_dir="./knowledge_base")
+    rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./knowledge_base")
 
     # One-time ingestion
     print("Ingesting documents...")
@@ -746,7 +746,7 @@ if __name__ == "__main__":
 After ingestion with auto-discovery, the consumer can inspect what schema was discovered:
 
 ```python
-rag = MetaRAG(llm_model="gpt-4o")
+rag = MetaRAG(llm_model="gpt-5-mini")
 rag.ingest("./documents/")
 
 # See what fields were auto-discovered
@@ -808,7 +808,7 @@ class MyPgRelationalStore(RelationalStore):
 
 # Use custom backends — same MetaRAG API, different infrastructure
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     vector_store=MyPgVectorStore("postgresql://prod-server/mydb"),
     relational_store=MyPgRelationalStore("postgresql://prod-server/mydb"),
 )

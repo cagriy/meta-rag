@@ -1,6 +1,6 @@
 config:
-  llm_model: "gpt-4o"
-  judge_model: "gpt-4o-mini"
+  llm_model: "gpt-5-mini"
+  judge_model: "gpt-5-mini"
   data_dir: "./eval_data"
   chunk_size: 1000
   chunk_overlap: 200

@@ -39,8 +39,8 @@ class MetaRAG:
 
     def __init__(
         self,
-        llm_model: str = "gpt-4o-mini",
-        extraction_model: str = "gpt-4o-mini",
+        llm_model: str = "gpt-5-mini",
+        extraction_model: str = "gpt-5-mini",
         schema: list[MetadataField] | None = None,
         data_dir: str = "./meta_rag_data",
         chunk_size: int = 1000,

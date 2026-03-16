@@ -13,7 +13,7 @@ class MetadataExtractor:
 
     def __init__(
         self,
-        llm_model: str = "gpt-4o-mini",
+        llm_model: str = "gpt-5-mini",
         extraction_prompt: str = DEFAULT_METADATA_EXTRACTION_PROMPT,
         discovery_prompt: str = DEFAULT_SCHEMA_DISCOVERY_PROMPT,
     ) -> None:

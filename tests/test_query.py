@@ -246,7 +246,7 @@ class TestQueryPipeline:
         mock_executor.execute.return_value = json.dumps([{"cnt": 42}])
 
         pipeline = QueryPipeline(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             tool_executor=mock_executor,
             schema=sample_schema,
         )
@@ -276,7 +276,7 @@ class TestQueryPipeline:
         mock_executor = MagicMock()
 
         pipeline = QueryPipeline(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             tool_executor=mock_executor,
             schema=sample_schema,
         )
@@ -331,7 +331,7 @@ class TestQueryPipeline:
         mock_executor.execute.return_value = "Query returned no rows."
 
         pipeline = QueryPipeline(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             tool_executor=mock_executor,
             schema=sample_schema,
             fallback=False,
@@ -394,7 +394,7 @@ class TestQueryPipeline:
         ]
 
         pipeline = QueryPipeline(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             tool_executor=mock_executor,
             schema=sample_schema,
             fallback=True,
@@ -453,7 +453,7 @@ class TestQueryPipeline:
         ]
 
         pipeline = QueryPipeline(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             tool_executor=mock_executor,
             schema=sample_schema,
             fallback=False,
@@ -499,7 +499,7 @@ class TestSchemaLifecycle:
 
         # First instance: explicit schema
         rag1 = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             schema=schema_fields,
             data_dir=data_dir,
         )
@@ -516,7 +516,7 @@ class TestSchemaLifecycle:
 
         # Second instance: no schema provided, should reconstruct from DB
         rag2 = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             schema=None,
             data_dir=data_dir,
         )

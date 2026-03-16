@@ -71,7 +71,7 @@ def main():
     #    - chunk_overlap: overlap between consecutive chunks
     # ------------------------------------------------------------------
     rag = MetaRAG(
-        llm_model="gpt-4o",
+        llm_model="gpt-5-mini",
         schema=schema,
         data_dir="./example_data",
         chunk_size=1000,

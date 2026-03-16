@@ -301,7 +301,7 @@ class TestQueryWithEvolve:
         mock_evolve_client.chat.completions.create.return_value = gap_response
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
             relational_store=relational_store,
@@ -337,7 +337,7 @@ class TestQueryWithoutEvolve:
         mock_client.chat.completions.create.return_value = direct_response
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
             relational_store=relational_store,
@@ -381,7 +381,7 @@ class TestDetectSchemaGap:
         )
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
             relational_store=relational_store,
@@ -416,7 +416,7 @@ class TestDetectSchemaGap:
         )
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
             relational_store=relational_store,
@@ -464,7 +464,7 @@ class TestBackfill:
         )
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
             relational_store=relational_store,
@@ -509,7 +509,7 @@ class TestBackfill:
         )
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
             relational_store=relational_store,
@@ -535,7 +535,7 @@ class TestBackfill:
         mock_vector = MagicMock()
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
             relational_store=relational_store,
@@ -571,7 +571,7 @@ class TestBackfill:
         )
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
             relational_store=relational_store,
@@ -609,7 +609,7 @@ class TestIncrementalIngest:
         vector_store = ChromaVectorStore(persist_dir=chroma_dir)
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             schema=[
                 MetadataField(name="author", type="text", description="Author"),
                 MetadataField(name="year", type="integer", description="Year"),
@@ -645,7 +645,7 @@ class TestIncrementalIngest:
         vector_store = ChromaVectorStore(persist_dir=chroma_dir)
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             schema=[
                 MetadataField(name="author", type="text", description="Author"),
                 MetadataField(name="year", type="integer", description="Year"),
@@ -683,7 +683,7 @@ class TestPruneEmptyFields:
         relational_store.insert("doc1", {"author": None, "year": None})
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
             relational_store=relational_store,
@@ -706,7 +706,7 @@ class TestPruneEmptyFields:
         relational_store.insert("doc1", {"author": "Alice", "year": None})
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
             relational_store=relational_store,
@@ -736,7 +736,7 @@ class TestAddFieldMethod:
         relational_store.initialize(schema)
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
             relational_store=relational_store,
@@ -764,7 +764,7 @@ class TestAddFieldMethod:
         relational_store.initialize(schema)
 
         rag = MetaRAG(
-            llm_model="gpt-4o",
+            llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
             relational_store=relational_store,

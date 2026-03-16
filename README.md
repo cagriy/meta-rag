@@ -78,7 +78,7 @@ schema = [
 
 # 2. Initialize
 rag = MetaRAG(
-    llm_model="gpt-4o",
+    llm_model="gpt-5-mini",
     schema=schema,
     data_dir="./my_data",
 )
@@ -97,7 +97,7 @@ print(rag.query("What is the most common occupation?"))     # → SQL aggregatio
 
 ```python
 # No schema provided — MetaRAG infers fields from a document sample on first ingest
-rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
+rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_data")
 rag.ingest("./documents/")
 print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occupation", ...]
 ```
@@ -170,7 +170,7 @@ Tests are defined in `examples/eval_tests.yaml` as a sequence of **stages**, eac
 1. Ingests the sample documents from `examples/documents/`
 2. Executes each test stage in order (basic queries → schema evolution → backfill → conversation)
 3. Scores each answer on two axes:
-   - **LLM judge** (0.0–1.0) — evaluates correctness, completeness, and relevance via `gpt-4o-mini`
+   - **LLM judge** (0.0–1.0) — evaluates correctness, completeness, and relevance
    - **Deterministic checks** — validates SQL usage, expected/excluded keywords, schema gap detection, etc.
 4. A test **passes** if the judge score is ≥ 0.7 **and** all deterministic checks pass
 
@@ -224,8 +224,8 @@ Edit `examples/eval_tests.yaml`. Each test case supports:
 
 ```python
 MetaRAG(
-    llm_model: str = "gpt-4o-mini",
-    extraction_model: str = "gpt-4o-mini",
+    llm_model: str = "gpt-5-mini",
+    extraction_model: str = "gpt-5-mini",
     schema: list[MetadataField] | None = None,
     data_dir: str = "./meta_rag_data",
     chunk_size: int = 1000,
@@ -239,8 +239,8 @@ MetaRAG(
 
 | Parameter          | Default             | Description                                                              |
 | -------------------- | --------------------- | -------------------------------------------------------------------------- |
-| `llm_model`        | `"gpt-4o-mini"`     | OpenAI model for query routing and answering                             |
-| `extraction_model`  | `"gpt-4o-mini"`     | OpenAI model used for metadata extraction during ingestion               |
+| `llm_model`        | See `__init__.py`   | OpenAI model for query routing and answering                             |
+| `extraction_model`  | See `__init__.py`   | OpenAI model used for metadata extraction during ingestion               |
 | `schema`           | `None`              | List of `MetadataField`; auto-discovered on first ingest if omitted      |
 | `data_dir`         | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
 | `chunk_size`       | `1000`              | Max characters per text chunk                                            |
