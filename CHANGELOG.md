@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-03-16
+
+### Added
+- Evaluation section in README documenting how the eval suite works, commands to run it, test stages, and how to add/modify tests
+
 ## [0.1.5] - 2026-03-15
 
 ### Changed
