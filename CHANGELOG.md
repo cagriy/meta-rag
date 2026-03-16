@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-03-16
+
+### Added
+- Evaluation suite with LLM-judge scoring and deterministic checks (`examples/run_eval.py`, `examples/eval_tests.yaml`)
+- `eval` dependency group with `pyyaml`
+- Evaluation section in README documenting how the eval suite works, commands to run it, test stages, and how to add/modify tests
+- `eval_data/` added to `.gitignore`
+
+### Fixed
+- Unpopulated schema fields causing misleading results on repeat queries
+
 ## [0.1.5] - 2026-03-15
 
 ### Changed

@@ -159,6 +159,65 @@ uv run python examples/example_usage.py --test --verbose
 | `/ingest`             | Re-ingest documents from`examples/documents/`                 |
 | `quit` / `exit` / `q` | Exit                                                          |
 
+## Evaluation
+
+The repository includes an evaluation suite that tests MetaRAG's core capabilities — semantic search, SQL generation, schema evolution, backfill, and conversational follow-ups — using a combination of LLM-judge scoring and deterministic checks.
+
+### How it works
+
+Tests are defined in `examples/eval_tests.yaml` as a sequence of **stages**, each containing one or more test cases. Every test specifies a question, expected behavior (e.g. SQL usage, expected keywords), and judge criteria. The eval runner:
+
+1. Ingests the sample documents from `examples/documents/`
+2. Executes each test stage in order (basic queries → schema evolution → backfill → conversation)
+3. Scores each answer on two axes:
+   - **LLM judge** (0.0–1.0) — evaluates correctness, completeness, and relevance via `gpt-4o-mini`
+   - **Deterministic checks** — validates SQL usage, expected/excluded keywords, schema gap detection, etc.
+4. A test **passes** if the judge score is ≥ 0.7 **and** all deterministic checks pass
+
+### Running the eval
+
+```bash
+# Basic run (reuses existing eval_data if present)
+uv run --group eval python examples/run_eval.py
+
+# Clean run — delete eval_data and start fresh
+uv run --group eval python examples/run_eval.py --reset
+
+# Verbose — print answers and judge reasoning
+uv run --group eval python examples/run_eval.py --verbose
+
+# Save a detailed JSON report
+uv run --group eval python examples/run_eval.py --save-report eval_report.json
+```
+
+### Test stages
+
+| Stage | What it tests | Example question |
+| --- | --- | --- |
+| Basic queries | Semantic search and SQL routing | "Who was born after 1800?" |
+| Schema evolution | Gap detection and field auto-addition | "Who has died after 1900?" |
+| Backfill | Populating newly added fields | Re-asks post-backfill query |
+| Conversation | Multi-turn context preservation | "Total mathematicians?" → "Who are they?" |
+
+### Adding or modifying tests
+
+Edit `examples/eval_tests.yaml`. Each test case supports:
+
+```yaml
+- id: my_test
+  question: "How many scientists were born in England?"
+  type: quantitative          # factual | quantitative | schema_evolution | conversational
+  evolve: false               # trigger schema evolution?
+  judge_criteria: "Should return the correct count"
+  expect_sql: true            # assert SQL was used
+  expected_keywords: ["England"]
+  expected_names: ["Newton", "Darwin", "Faraday"]
+  excluded_names: []
+  expect_gap_detected: false
+  save_history: false         # save conversation history for follow-up tests
+  continues_from: ""          # test id to continue conversation from
+```
+
 ## API Reference
 
 ### `MetaRAG`
