@@ -63,7 +63,7 @@ DEFAULT_SCHEMA_GAP_DETECTION_PROMPT = (
     "(e.g. 'how many people total' needs no new field; but 'how many died after 1800' "
     "DOES need year_of_death if it doesn't exist)\n"
     "  - identifier or system fields (e.g. person_id, record_id, id, key, index)\n"
-    "  - fields that already exist in the schema\n"
+    "  - fields that already exist in the schema AND are populated with data\n"
     "  - fields that are SEMANTICALLY EQUIVALENT to an existing field, even if named "
     "differently (e.g. 'field_of_expertise', 'profession', 'role', 'specialization' "
     "are all covered by 'occupation')\n\n"
@@ -84,6 +84,10 @@ DEFAULT_SCHEMA_GAP_DETECTION_PROMPT = (
     "become available soon — suggest checking back later. Keep it friendly and "
     "brief. Do not mention technical details like field names, schemas, backfill, "
     "or function calls. If gap_detected is false, empty string.\n\n"
+    "IMPORTANT: The following fields exist in the schema but have NOT been populated "
+    "with data yet. They should still be flagged as gaps (gap_detected=true) because "
+    "queries against them will return empty/misleading results:\n"
+    "{unpopulated_fields_text}\n\n"
     "Current schema fields:\n{fields_text}"
 )
 

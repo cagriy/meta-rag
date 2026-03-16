@@ -140,6 +140,11 @@ class MetaRAG:
                 "No schema available. Ingest documents first or provide a schema."
             )
 
+        # Filter out unpopulated fields so the LLM won't generate SQL against empty columns
+        empty_field_names = set(self.relational_store.get_empty_fields())
+        populated_fields = [f for f in self.schema.fields if f.name not in empty_field_names]
+        query_schema = MetadataSchema(fields=populated_fields)
+
         tool_executor = ToolExecutor(
             vector_store=self.vector_store,
             relational_store=self.relational_store,
@@ -147,7 +152,7 @@ class MetaRAG:
         query_pipeline = QueryPipeline(
             llm_model=self.llm_model,
             tool_executor=tool_executor,
-            schema=self.schema,
+            schema=query_schema,
             query_system_prompt=self.prompts.query_system_prompt,
             fallback=fallback,
         )
@@ -157,7 +162,8 @@ class MetaRAG:
         self.last_history = query_pipeline.messages
 
         if evolve:
-            result = self._detect_schema_gap(question)
+            unpopulated_names = list(empty_field_names)
+            result = self._detect_schema_gap(question, unpopulated_fields=unpopulated_names)
             if result.gap_detected and result.proposed_field:
                 self.add_field(result.proposed_field)
                 if not fallback:
@@ -176,15 +182,30 @@ class MetaRAG:
 
         return answer
 
-    def _detect_schema_gap(self, question: str) -> SchemaEvolutionResult:
+    def _detect_schema_gap(
+        self, question: str, unpopulated_fields: list[str] | None = None
+    ) -> SchemaEvolutionResult:
         """Use LLM to check if the question requires a field missing from the schema."""
         current_fields = [
             f"{f.name} ({f.type}): {f.description}" for f in self.schema.fields
         ]
         fields_text = "\n".join(current_fields) if current_fields else "(no fields defined)"
 
-        system_message = self.prompts.schema_gap_detection_prompt.format(
-            fields_text=fields_text,
+        if unpopulated_fields:
+            unpopulated_fields_text = ", ".join(unpopulated_fields)
+        else:
+            unpopulated_fields_text = "(none)"
+
+        # Use SafeDict so custom prompts missing {unpopulated_fields_text} don't raise KeyError
+        class SafeDict(dict):
+            def __missing__(self, key: str) -> str:
+                return "{" + key + "}"
+
+        system_message = self.prompts.schema_gap_detection_prompt.format_map(
+            SafeDict(
+                fields_text=fields_text,
+                unpopulated_fields_text=unpopulated_fields_text,
+            )
         )
 
         client = openai.OpenAI()

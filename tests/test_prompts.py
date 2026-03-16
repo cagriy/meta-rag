@@ -39,7 +39,10 @@ class TestPromptConfigDefaults:
 
     def test_schema_gap_detection_prompt_format_with_escaped_braces(self):
         config = PromptConfig()
-        result = config.schema_gap_detection_prompt.format(fields_text="year (integer): Year of birth")
+        result = config.schema_gap_detection_prompt.format(
+            fields_text="year (integer): Year of birth",
+            unpopulated_fields_text="(none)",
+        )
         # Escaped braces should render as literal braces
         assert "{name (snake_case)" in result
         assert "year (integer): Year of birth" in result

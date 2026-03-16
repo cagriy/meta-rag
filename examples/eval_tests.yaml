@@ -1,0 +1,102 @@
+config:
+  llm_model: "gpt-4o"
+  judge_model: "gpt-4o-mini"
+  data_dir: "./eval_data"
+  chunk_size: 1000
+  chunk_overlap: 200
+  documents_path: "examples/documents/"
+  schema:
+    - name: birthplace
+      type: text
+      description: "Person's place of birth"
+    - name: occupation
+      type: text
+      description: "Primary occupation or field"
+    - name: year_of_birth
+      type: integer
+      description: "Year the person was born"
+
+stages:
+  - name: "Stage 1: Basic Queries"
+    tests:
+      - id: basic_semantic_single
+        question: "Where was Newton born?"
+        type: factual
+        judge_criteria: "Answer should mention Woolsthorpe or Lincolnshire, England"
+        expected_keywords:
+          - "Woolsthorpe"
+
+      - id: basic_semantic_multi
+        question: "What did Marie Curie discover?"
+        type: factual
+        judge_criteria: "Answer should mention radioactivity, polonium, or radium"
+        expected_keywords:
+          - "radioactivity"
+
+      - id: basic_sql_born_after
+        question: "Who was born after 1800?"
+        type: quantitative
+        judge_criteria: "Answer should list people born after 1800 based on the dataset"
+        expect_sql: true
+        excluded_names:
+          - "Newton"
+          - "Galileo"
+
+      - id: basic_sql_from_england
+        question: "How many people in the dataset are from England?"
+        type: quantitative
+        judge_criteria: "Answer should provide a count of people from England"
+        expect_sql: true
+
+      - id: basic_sql_mathematicians
+        question: "Who are the mathematicians in the collection?"
+        type: quantitative
+        judge_criteria: "Answer should list mathematicians found in the dataset"
+        expect_sql: true
+
+  - name: "Stage 2: Schema Evolution"
+    tests:
+      - id: evolution_death_year
+        question: "Who has died after 1900?"
+        type: schema_evolution
+        evolve: true
+        judge_criteria: "The system should recognize it cannot answer precisely and indicate a schema gap was detected for death year, no answer other than the explanation should be generated."
+        expect_gap_detected: true
+        expected_new_field_like: "death"
+
+  - name: "Stage 2b: Repeat Query Before Backfill"
+    tests:
+      - id: evolution_death_year_repeat
+        question: "Who has died after 1900?"
+        type: schema_evolution
+        evolve: true
+        judge_criteria: "The system should still recognize it cannot answer precisely because the death year data has not been populated yet. It should NOT attempt SQL or return empty/misleading results."
+        expect_gap_detected: true
+        expected_new_field_like: "death"
+
+  - name: "Stage 3: Backfill"
+    action: backfill
+    tests:
+      - id: post_backfill_death_year
+        question: "Who has died after 1900?"
+        type: quantitative
+        judge_criteria: "Answer should list people who died after 1900 using the newly backfilled death year field"
+        expect_sql: true
+        expected_names:
+          - "Curie"
+          - "Einstein"
+
+  - name: "Stage 4: Conversational Follow-ups"
+    tests:
+      - id: conversation_setup
+        question: "Total number of mathematicians?"
+        type: quantitative
+        judge_criteria: "Answer should provide a count of mathematicians which is 5"
+        expect_sql: true
+        save_history: true
+
+      - id: conversation_followup
+        question: "Who are they?"
+        type: conversational
+        judge_criteria: "Answer should list the mathematicians referenced in the previous question, correctly resolving 'they' from context"
+        continues_from: conversation_setup

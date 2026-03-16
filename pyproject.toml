@@ -17,6 +17,9 @@ dependencies = [
 dev = [
     "pytest",
 ]
+eval = [
+    "pyyaml",
+]
 
 [build-system]
 requires = ["hatchling"]
