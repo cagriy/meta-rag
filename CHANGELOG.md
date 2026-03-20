@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-03-20
+
+### Changed
+- Renamed project from meta-rag / MetaRAG to duo-rag / DuoRAG across all code, packaging, and documentation
+- PyPI package name changed from `meta-rag` to `duo-rag`
+- Python module changed from `meta_rag` to `duo_rag`
+- Main class changed from `MetaRAG` to `DuoRAG`
+- GitHub repository renamed from `cagriy/meta-rag` to `cagriy/duo-rag`
+
 ## [0.1.7] - 2026-03-16
 
 ### Fixed
@@ -53,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.3] - 2026-03-13
 
 ### Added
-- `extraction_model` parameter on `MetaRAG` (defaults to `gpt-4o-mini`) — separates the model used for metadata extraction and schema discovery from the model used for query routing and schema gap detection
+- `extraction_model` parameter on `DuoRAG` (defaults to `gpt-4o-mini`) — separates the model used for metadata extraction and schema discovery from the model used for query routing and schema gap detection
 - `--no-schema` and `--reset` flags added to the example script
 
 ### Changed
@@ -82,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-02-28
 
 ### Added
-- `MetaRAG` facade with schema lifecycle management (auto-discover or manual schema)
+- `DuoRAG` facade with schema lifecycle management (auto-discover or manual schema)
 - `MetadataSchema` and `MetadataField` for defining structured extraction fields
 - `ChromaVectorStore` — embedded ChromaDB implementation for semantic search
 - `SQLiteRelationalStore` — embedded SQLite implementation with SQL safety (SELECT-only, read-only connection)

@@ -1,6 +1,6 @@
 [project]
-name = "meta-rag"
-version = "0.1.7"
+name = "duo-rag"
+version = "0.1.8"
 description = "Extends RAG with structured query capabilities using dual vector + relational storage"
 readme = "README.md"
 authors = [
@@ -25,10 +25,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cagriy/meta-rag"
-Repository = "https://github.com/cagriy/meta-rag"
-Changelog = "https://github.com/cagriy/meta-rag/releases"
-Issues = "https://github.com/cagriy/meta-rag/issues"
+Homepage = "https://github.com/cagriy/duo-rag"
+Repository = "https://github.com/cagriy/duo-rag"
+Changelog = "https://github.com/cagriy/duo-rag/releases"
+Issues = "https://github.com/cagriy/duo-rag/issues"
 
 [project.optional-dependencies]
 dev = ["pytest"]

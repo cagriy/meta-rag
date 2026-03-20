@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from meta_rag.ingestion.chunker import Chunk, Chunker
-from meta_rag.ingestion.extractor import MetadataExtractor
-from meta_rag.ingestion.pipeline import IngestionPipeline
-from meta_rag.schema import MetadataField, MetadataSchema
-from meta_rag.stores.relational import SQLiteRelationalStore
-from meta_rag.stores.vector import ChromaVectorStore
+from duo_rag.ingestion.chunker import Chunk, Chunker
+from duo_rag.ingestion.extractor import MetadataExtractor
+from duo_rag.ingestion.pipeline import IngestionPipeline
+from duo_rag.schema import MetadataField, MetadataSchema
+from duo_rag.stores.relational import SQLiteRelationalStore
+from duo_rag.stores.vector import ChromaVectorStore
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ class TestChunkerDirectory:
 class TestExtractorExtract:
     """extract() returns correct dict with type validation."""
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_extract_returns_typed_dict(self, mock_openai_cls):
         schema = _make_schema()
 
@@ -192,7 +192,7 @@ class TestExtractorExtract:
         call_kwargs = mock_client.chat.completions.create.call_args
         assert call_kwargs.kwargs["model"] == "test-model"
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_extract_null_handling(self, mock_openai_cls):
         """Null values in response are preserved as None."""
         schema = _make_schema()
@@ -210,7 +210,7 @@ class TestExtractorExtract:
         assert result["year"] is None
 
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_extract_list_values_joined_as_csv(self, mock_openai_cls):
         """List values from the LLM are joined into a comma-separated string."""
         schema = MetadataSchema(
@@ -228,7 +228,7 @@ class TestExtractorExtract:
 
         assert result["interests"] == "astronomy, physics"
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_extract_all_null_list_returns_none(self, mock_openai_cls):
         """A list of only null values normalises to None."""
         schema = MetadataSchema(
@@ -250,7 +250,7 @@ class TestExtractorExtract:
 class TestExtractorDiscoverSchema:
     """discover_schema() returns a MetadataSchema with correct fields."""
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_discover_schema(self, mock_openai_cls):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
@@ -293,7 +293,7 @@ class TestExtractorDiscoverSchema:
 class TestIngestionPipelineIntegration:
     """End-to-end test with mocked LLM but real SQLite and Chroma stores."""
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_ingest_populates_both_stores(self, mock_openai_cls, tmp_path):
         # --- Set up mock OpenAI client ---
         mock_client = MagicMock()

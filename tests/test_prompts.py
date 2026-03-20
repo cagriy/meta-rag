@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from meta_rag import MetaRAG, PromptConfig
-from meta_rag.prompts import (
+from duo_rag import DuoRAG, PromptConfig
+from duo_rag.prompts import (
     DEFAULT_METADATA_EXTRACTION_PROMPT,
     DEFAULT_QUERY_SYSTEM_PROMPT,
     DEFAULT_SCHEMA_DISCOVERY_PROMPT,
     DEFAULT_SCHEMA_GAP_DETECTION_PROMPT,
     PromptConfig as PromptConfigDirect,
 )
-from meta_rag.schema import MetadataField, MetadataSchema
+from duo_rag.schema import MetadataField, MetadataSchema
 
 
 class TestPromptConfigDefaults:
@@ -69,7 +69,7 @@ class TestPromptConfigDefaults:
 
 
 class TestPromptConfigThreading:
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_custom_prompts_thread_to_extractor(self, mock_openai_cls):
         custom_extraction = "Custom extraction: {extraction_fields}"
         custom_discovery = "Custom discovery prompt"
@@ -77,9 +77,9 @@ class TestPromptConfigThreading:
             metadata_extraction_prompt=custom_extraction,
             schema_discovery_prompt=custom_discovery,
         )
-        rag = MetaRAG(prompts=config, data_dir="/tmp/test_prompt_threading")
+        rag = DuoRAG(prompts=config, data_dir="/tmp/test_prompt_threading")
 
-        from meta_rag.ingestion.extractor import MetadataExtractor
+        from duo_rag.ingestion.extractor import MetadataExtractor
 
         extractor = MetadataExtractor(
             llm_model="test",
@@ -92,11 +92,11 @@ class TestPromptConfigThreading:
     def test_custom_prompts_thread_to_query_pipeline(self):
         custom_query = "Custom query: {available_columns}"
         config = PromptConfig(query_system_prompt=custom_query)
-        rag = MetaRAG(prompts=config, data_dir="/tmp/test_prompt_threading2")
+        rag = DuoRAG(prompts=config, data_dir="/tmp/test_prompt_threading2")
         assert rag.prompts.query_system_prompt == custom_query
 
     def test_default_prompts_when_none(self):
-        rag = MetaRAG(data_dir="/tmp/test_prompt_default")
+        rag = DuoRAG(data_dir="/tmp/test_prompt_default")
         assert rag.prompts.query_system_prompt == DEFAULT_QUERY_SYSTEM_PROMPT
         assert rag.prompts.metadata_extraction_prompt == DEFAULT_METADATA_EXTRACTION_PROMPT
         assert rag.prompts.schema_discovery_prompt == DEFAULT_SCHEMA_DISCOVERY_PROMPT

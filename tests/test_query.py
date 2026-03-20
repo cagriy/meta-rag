@@ -1,4 +1,4 @@
-"""Tests for the query module: ToolBuilder, SQL safety, ToolExecutor, QueryPipeline, and MetaRAG schema lifecycle."""
+"""Tests for the query module: ToolBuilder, SQL safety, ToolExecutor, QueryPipeline, and DuoRAG schema lifecycle."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from meta_rag.query.executor import ToolExecutor
-from meta_rag.query.pipeline import QueryPipeline
-from meta_rag.query.tools import ToolBuilder
-from meta_rag.schema import MetadataField, MetadataSchema
-from meta_rag.stores.base import SearchResult
-from meta_rag.stores.relational import SQLiteRelationalStore
+from duo_rag.query.executor import ToolExecutor
+from duo_rag.query.pipeline import QueryPipeline
+from duo_rag.query.tools import ToolBuilder
+from duo_rag.schema import MetadataField, MetadataSchema
+from duo_rag.stores.base import SearchResult
+from duo_rag.stores.relational import SQLiteRelationalStore
 
 
 # ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ def _make_openai_response(
 
 
 class TestQueryPipeline:
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_tool_calling_flow(self, mock_openai_cls, sample_schema: MetadataSchema):
         """When the LLM decides to use a tool, the pipeline should execute it and make a second call."""
         mock_client = MagicMock()
@@ -260,7 +260,7 @@ class TestQueryPipeline:
             {"sql": "SELECT COUNT(*) AS cnt FROM documents_metadata;"},
         )
 
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_direct_answer_flow(self, mock_openai_cls, sample_schema: MetadataSchema):
         """When the LLM answers directly (no tools), the pipeline returns immediately."""
         mock_client = MagicMock()
@@ -287,7 +287,7 @@ class TestQueryPipeline:
         assert mock_client.chat.completions.create.call_count == 1
         mock_executor.execute.assert_not_called()
 
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_fallback_false_blocks_semantic_fallback(
         self, mock_openai_cls, sample_schema: MetadataSchema
     ):
@@ -347,7 +347,7 @@ class TestQueryPipeline:
         )
         assert pipeline.last_fell_back is False
 
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_fallback_true_allows_fallback_and_sets_flag(
         self, mock_openai_cls, sample_schema: MetadataSchema
     ):
@@ -406,7 +406,7 @@ class TestQueryPipeline:
         assert mock_executor.execute.call_count == 2
         assert pipeline.last_fell_back is True
 
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_fallback_false_does_not_block_non_sql_followup(
         self, mock_openai_cls, sample_schema: MetadataSchema
     ):
@@ -472,11 +472,11 @@ class TestQueryPipeline:
 
 
 class TestSchemaLifecycle:
-    @patch("meta_rag.ingestion.extractor.MetadataExtractor.extract")
-    @patch("meta_rag.ingestion.extractor.MetadataExtractor.__init__", return_value=None)
-    @patch("meta_rag.stores.vector.ChromaVectorStore.add")
-    @patch("meta_rag.stores.vector.ChromaVectorStore.initialize")
-    @patch("meta_rag.stores.vector.ChromaVectorStore.__init__", return_value=None)
+    @patch("duo_rag.ingestion.extractor.MetadataExtractor.extract")
+    @patch("duo_rag.ingestion.extractor.MetadataExtractor.__init__", return_value=None)
+    @patch("duo_rag.stores.vector.ChromaVectorStore.add")
+    @patch("duo_rag.stores.vector.ChromaVectorStore.initialize")
+    @patch("duo_rag.stores.vector.ChromaVectorStore.__init__", return_value=None)
     def test_schema_persists_and_reconstructs(
         self,
         mock_chroma_init,
@@ -486,10 +486,10 @@ class TestSchemaLifecycle:
         mock_extractor_extract,
         tmp_path,
     ):
-        """Create MetaRAG with explicit schema, ingest, then verify a second instance reconstructs the schema from DB."""
-        from meta_rag import MetaRAG
+        """Create DuoRAG with explicit schema, ingest, then verify a second instance reconstructs the schema from DB."""
+        from duo_rag import DuoRAG
 
-        data_dir = str(tmp_path / "meta_rag_data")
+        data_dir = str(tmp_path / "duo_rag_data")
         os.makedirs(data_dir, exist_ok=True)
 
         schema_fields = [
@@ -498,7 +498,7 @@ class TestSchemaLifecycle:
         ]
 
         # First instance: explicit schema
-        rag1 = MetaRAG(
+        rag1 = DuoRAG(
             llm_model="gpt-5-mini",
             schema=schema_fields,
             data_dir=data_dir,
@@ -515,7 +515,7 @@ class TestSchemaLifecycle:
         rag1.relational_store.insert("doc1", {"author": "Alice", "year": 2023})
 
         # Second instance: no schema provided, should reconstruct from DB
-        rag2 = MetaRAG(
+        rag2 = DuoRAG(
             llm_model="gpt-5-mini",
             schema=None,
             data_dir=data_dir,

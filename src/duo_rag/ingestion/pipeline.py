@@ -4,10 +4,10 @@ import hashlib
 from pathlib import Path
 from typing import Callable
 
-from meta_rag.ingestion.chunker import Chunker
-from meta_rag.ingestion.extractor import MetadataExtractor
-from meta_rag.schema import MetadataSchema
-from meta_rag.stores.base import RelationalStore, VectorStore
+from duo_rag.ingestion.chunker import Chunker
+from duo_rag.ingestion.extractor import MetadataExtractor
+from duo_rag.schema import MetadataSchema
+from duo_rag.stores.base import RelationalStore, VectorStore
 
 
 class IngestionPipeline:

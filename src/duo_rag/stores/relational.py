@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from meta_rag.schema import MetadataField, MetadataSchema
-from meta_rag.stores.base import RelationalStore
+from duo_rag.schema import MetadataField, MetadataSchema
+from duo_rag.stores.base import RelationalStore
 
 REVERSE_TYPE_MAP = {"TEXT": "text", "INTEGER": "integer"}
 TYPE_MAP = {"text": "TEXT", "integer": "INTEGER"}

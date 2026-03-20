@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from meta_rag.schema import MetadataSchema
+from duo_rag.schema import MetadataSchema
 
 
 class ToolBuilder:

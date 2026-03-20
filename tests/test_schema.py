@@ -1,10 +1,10 @@
-"""Comprehensive tests for meta_rag.schema module."""
+"""Comprehensive tests for duo_rag.schema module."""
 
 from __future__ import annotations
 
 import pytest
 
-from meta_rag.schema import MetadataField, MetadataSchema
+from duo_rag.schema import MetadataField, MetadataSchema
 
 
 # ---------------------------------------------------------------------------

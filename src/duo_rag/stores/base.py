@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from meta_rag.schema import MetadataField, MetadataSchema
+    from duo_rag.schema import MetadataField, MetadataSchema
 
 
 @dataclass

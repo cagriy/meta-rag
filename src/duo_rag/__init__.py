@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.metadata import version as _meta_version
 
-__version__ = _meta_version("meta-rag")
+__version__ = _meta_version("duo-rag")
 
 import json
 import os
@@ -11,20 +11,20 @@ from typing import Callable
 
 import openai
 
-from meta_rag.ingestion.chunker import Chunker
-from meta_rag.ingestion.extractor import MetadataExtractor
-from meta_rag.ingestion.pipeline import IngestionPipeline
-from meta_rag.prompts import PromptConfig
-from meta_rag.query.executor import ToolExecutor
-from meta_rag.query.pipeline import QueryPipeline
-from meta_rag.schema import MetadataField, MetadataSchema, SchemaEvolutionResult
-from meta_rag.stores.base import RelationalStore, SearchResult, VectorStore
-from meta_rag.stores.relational import SQLiteRelationalStore
-from meta_rag.stores.vector import ChromaVectorStore
+from duo_rag.ingestion.chunker import Chunker
+from duo_rag.ingestion.extractor import MetadataExtractor
+from duo_rag.ingestion.pipeline import IngestionPipeline
+from duo_rag.prompts import PromptConfig
+from duo_rag.query.executor import ToolExecutor
+from duo_rag.query.pipeline import QueryPipeline
+from duo_rag.schema import MetadataField, MetadataSchema, SchemaEvolutionResult
+from duo_rag.stores.base import RelationalStore, SearchResult, VectorStore
+from duo_rag.stores.relational import SQLiteRelationalStore
+from duo_rag.stores.vector import ChromaVectorStore
 
 __all__ = [
     "__version__",
-    "MetaRAG",
+    "DuoRAG",
     "MetadataField",
     "MetadataSchema",
     "PromptConfig",
@@ -35,8 +35,8 @@ __all__ = [
 ]
 
 
-class MetaRAG:
-    """High-level facade for the meta-rag library.
+class DuoRAG:
+    """High-level facade for the duo-rag library.
 
     Combines vector search (ChromaDB) with relational queries (SQLite)
     and uses LLM tool-calling to route questions to the right backend.
@@ -47,7 +47,7 @@ class MetaRAG:
         llm_model: str = "gpt-5-mini",
         extraction_model: str = "gpt-5-mini",
         schema: list[MetadataField] | None = None,
-        data_dir: str = "./meta_rag_data",
+        data_dir: str = "./duo_rag_data",
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         vector_store: VectorStore | None = None,
@@ -133,7 +133,7 @@ class MetaRAG:
     def query(
         self, question: str, evolve: bool = False, history: list[dict] | None = None, fallback: bool = False
     ) -> str:
-        """Ask a question — meta-rag handles routing automatically.
+        """Ask a question — duo-rag handles routing automatically.
 
         If evolve=True, checks for schema gaps after answering and auto-adds
         any detected missing field (with an informational message appended).

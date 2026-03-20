@@ -4,9 +4,9 @@ import json
 
 import openai
 
-from meta_rag.prompts import DEFAULT_QUERY_SYSTEM_PROMPT
-from meta_rag.query.executor import ToolExecutor
-from meta_rag.schema import MetadataSchema
+from duo_rag.prompts import DEFAULT_QUERY_SYSTEM_PROMPT
+from duo_rag.query.executor import ToolExecutor
+from duo_rag.schema import MetadataSchema
 
 
 class QueryPipeline:

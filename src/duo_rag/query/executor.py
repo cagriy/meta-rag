@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from meta_rag.stores.base import RelationalStore, VectorStore
+from duo_rag.stores.base import RelationalStore, VectorStore
 
 
 class ToolExecutor:

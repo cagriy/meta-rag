@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import chromadb
 
-from meta_rag.schema import MetadataSchema
-from meta_rag.stores.base import SearchResult, VectorStore
+from duo_rag.schema import MetadataSchema
+from duo_rag.stores.base import SearchResult, VectorStore
 
 
 class ChromaVectorStore(VectorStore):

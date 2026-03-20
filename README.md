@@ -1,4 +1,4 @@
-# MetaRAG
+# DuoRAG
 
 Imagine a corpus of documents with scientist biographies.
 
@@ -17,7 +17,7 @@ For an initial corpus it is possible to improve this problem by extracting metad
 1. One has to predict all the questions that can be asked against the corpus upfront.
 2. Constantly revising that prediction as the documents change, e.g. adding nobel prizes later, or extending the document set to contain artists.
 
-MetaRAG solves both problems by:
+DuoRAG solves both problems by:
 
 1. An initial metadata (schema) discovery before the first ingestion
 2. Self-update schema with candidate fields when it fails to answer a question
@@ -26,7 +26,7 @@ A periodic "backfill" run then extracts and populates the candidate fields, or p
 
 ## How It Works
 
-MetaRAG maintains two parallel stores for every ingested document:
+DuoRAG maintains two parallel stores for every ingested document:
 
 
 | Store            | Backend  | Used for                         |
@@ -38,7 +38,7 @@ At query time, an LLM uses **tool-calling** to decide which backend to hit — o
 
 ### Schema
 
-MetaRAG allows you define an initial schema, if you prefer to cover the most predictable fields and let the rest evolve based on user queries. If you skip the schema, MetaRAG auto-discovers one by sampling a configurable subset of documents.
+DuoRAG allows you define an initial schema, if you prefer to cover the most predictable fields and let the rest evolve based on user queries. If you skip the schema, DuoRAG auto-discovers one by sampling a configurable subset of documents.
 
 ## Key Features
 
@@ -52,9 +52,9 @@ MetaRAG allows you define an initial schema, if you prefer to cover the most pre
 ## Installation
 
 ```bash
-uv add meta-rag
+uv add duo-rag
 # or
-pip install meta-rag
+pip install duo-rag
 ```
 
 Set your OpenAI API key:
@@ -67,7 +67,7 @@ export OPENAI_API_KEY=sk-...
 ## Quick Start
 
 ```python
-from meta_rag import MetaRAG, MetadataField
+from duo_rag import DuoRAG, MetadataField
 
 # 1. Define a schema (or omit for auto-discovery)
 schema = [
@@ -77,7 +77,7 @@ schema = [
 ]
 
 # 2. Initialize
-rag = MetaRAG(
+rag = DuoRAG(
     llm_model="gpt-5-mini",
     schema=schema,
     data_dir="./my_data",
@@ -96,8 +96,8 @@ print(rag.query("What is the most common occupation?"))     # → SQL aggregatio
 ### Auto schema discovery
 
 ```python
-# No schema provided — MetaRAG infers fields from a document sample on first ingest
-rag = MetaRAG(llm_model="gpt-5-mini", data_dir="./my_data")
+# No schema provided — DuoRAG infers fields from a document sample on first ingest
+rag = DuoRAG(llm_model="gpt-5-mini", data_dir="./my_data")
 rag.ingest("./documents/")
 print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occupation", ...]
 ```
@@ -105,7 +105,7 @@ print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occup
 ### Schema evolution
 
 ```python
-# By default, if SQL can't answer a question (missing column), MetaRAG won't
+# By default, if SQL can't answer a question (missing column), DuoRAG won't
 # fall back to semantic search — avoiding misleading partial answers.
 answer = rag.query("How many people died before 1900?", evolve=True)
 # → explains the data isn't available yet as structured metadata
@@ -161,7 +161,7 @@ uv run python examples/example_usage.py --test --verbose
 
 ## Evaluation
 
-The repository includes an evaluation suite that tests MetaRAG's core capabilities — semantic search, SQL generation, schema evolution, backfill, and conversational follow-ups — using a combination of LLM-judge scoring and deterministic checks.
+The repository includes an evaluation suite that tests DuoRAG's core capabilities — semantic search, SQL generation, schema evolution, backfill, and conversational follow-ups — using a combination of LLM-judge scoring and deterministic checks.
 
 ### How it works
 
@@ -220,14 +220,14 @@ Edit `examples/eval_tests.yaml`. Each test case supports:
 
 ## API Reference
 
-### `MetaRAG`
+### `DuoRAG`
 
 ```python
-MetaRAG(
+DuoRAG(
     llm_model: str = "gpt-5-mini",
     extraction_model: str = "gpt-5-mini",
     schema: list[MetadataField] | None = None,
-    data_dir: str = "./meta_rag_data",
+    data_dir: str = "./duo_rag_data",
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
     vector_store: VectorStore | None = None,
@@ -242,7 +242,7 @@ MetaRAG(
 | `llm_model`        | See `__init__.py`   | OpenAI model for query routing and answering                             |
 | `extraction_model`  | See `__init__.py`   | OpenAI model used for metadata extraction during ingestion               |
 | `schema`           | `None`              | List of `MetadataField`; auto-discovered on first ingest if omitted      |
-| `data_dir`         | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
+| `data_dir`         | `"./duo_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
 | `chunk_size`       | `1000`              | Max characters per text chunk                                            |
 | `chunk_overlap`    | `200`               | Character overlap between consecutive chunks                             |
 | `vector_store`     | `None`              | Custom `VectorStore` (default created in `data_dir` if omitted)          |

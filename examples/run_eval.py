@@ -1,4 +1,4 @@
-"""MetaRAG evaluation test suite.
+"""DuoRAG evaluation test suite.
 
 Runs end-to-end evaluation tests against real documents using an LLM judge
 for subjective quality assessment and deterministic checks for objective facts.
@@ -21,7 +21,7 @@ load_dotenv()
 
 import openai
 
-from meta_rag import MetaRAG, MetadataField
+from duo_rag import DuoRAG, MetadataField
 
 
 @dataclass
@@ -82,7 +82,7 @@ def judge_response(
     return float(raw.get("overall_score", 0.0)), raw.get("reasoning", "")
 
 
-def run_deterministic_checks(test_case: dict, answer: str, sql_used: str | None, rag: MetaRAG) -> dict[str, bool]:
+def run_deterministic_checks(test_case: dict, answer: str, sql_used: str | None, rag: DuoRAG) -> dict[str, bool]:
     """Run non-LLM assertions on the response."""
     checks: dict[str, bool] = {}
     answer_lower = answer.lower()
@@ -124,7 +124,7 @@ class EvalRunner:
             MetadataField(name=s["name"], type=s["type"], description=s["description"])
             for s in config["schema"]
         ]
-        self.rag = MetaRAG(
+        self.rag = DuoRAG(
             llm_model=config["llm_model"],
             schema=schema,
             data_dir=config["data_dir"],
@@ -275,7 +275,7 @@ class EvalRunner:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="MetaRAG evaluation suite")
+    parser = argparse.ArgumentParser(description="DuoRAG evaluation suite")
     parser.add_argument("--reset", action="store_true", help="Delete eval data for a clean run")
     parser.add_argument("--verbose", action="store_true", help="Print answers and judge reasoning")
     parser.add_argument("--save-report", type=str, default=None, help="Save JSON report to file")

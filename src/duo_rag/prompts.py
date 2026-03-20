@@ -94,7 +94,7 @@ DEFAULT_SCHEMA_GAP_DETECTION_PROMPT = (
 
 @dataclass
 class PromptConfig:
-    """Customizable prompts for all LLM calls in meta-rag."""
+    """Customizable prompts for all LLM calls in duo-rag."""
 
     query_system_prompt: str = DEFAULT_QUERY_SYSTEM_PROMPT
     metadata_extraction_prompt: str = DEFAULT_METADATA_EXTRACTION_PROMPT

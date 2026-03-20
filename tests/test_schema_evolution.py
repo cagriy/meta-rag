@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from meta_rag.schema import MetadataField, MetadataSchema, SchemaEvolutionResult
-from meta_rag.stores.relational import SQLiteRelationalStore
-from meta_rag.stores.vector import ChromaVectorStore
+from duo_rag.schema import MetadataField, MetadataSchema, SchemaEvolutionResult
+from duo_rag.stores.relational import SQLiteRelationalStore
+from duo_rag.stores.vector import ChromaVectorStore
 
 
 # ---------------------------------------------------------------------------
@@ -256,12 +256,12 @@ class TestSchemaAddRemoveField:
 
 
 class TestQueryWithEvolve:
-    @patch("meta_rag.__init__.openai.OpenAI")
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.__init__.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_gap_detected_appends_message_and_adds_field(
         self, mock_query_openai_cls, mock_evolve_openai_cls, tmp_path
     ):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         # Set up relational store with schema
         db_path = str(tmp_path / "metadata.db")
@@ -300,7 +300,7 @@ class TestQueryWithEvolve:
         )
         mock_evolve_client.chat.completions.create.return_value = gap_response
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
@@ -315,9 +315,9 @@ class TestQueryWithEvolve:
 
 
 class TestQueryWithoutEvolve:
-    @patch("meta_rag.query.pipeline.openai.OpenAI")
+    @patch("duo_rag.query.pipeline.openai.OpenAI")
     def test_no_evolve_does_not_call_gap_detection(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -336,7 +336,7 @@ class TestQueryWithoutEvolve:
         direct_response.choices[0].message.tool_calls = None
         mock_client.chat.completions.create.return_value = direct_response
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
@@ -356,9 +356,9 @@ class TestQueryWithoutEvolve:
 
 
 class TestDetectSchemaGap:
-    @patch("meta_rag.__init__.openai.OpenAI")
+    @patch("duo_rag.__init__.openai.OpenAI")
     def test_gap_detected(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -380,7 +380,7 @@ class TestDetectSchemaGap:
             })
         )
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
@@ -395,9 +395,9 @@ class TestDetectSchemaGap:
         assert result.message != ""
         assert result.unavailable_message != ""
 
-    @patch("meta_rag.__init__.openai.OpenAI")
+    @patch("duo_rag.__init__.openai.OpenAI")
     def test_no_gap_detected(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -415,7 +415,7 @@ class TestDetectSchemaGap:
             })
         )
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
@@ -436,9 +436,9 @@ class TestDetectSchemaGap:
 
 
 class TestBackfill:
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_backfill_populates_new_field(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -463,7 +463,7 @@ class TestBackfill:
             json.dumps({"country": "Germany"})
         )
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
@@ -483,9 +483,9 @@ class TestBackfill:
         )
         assert rows[0]["country"] == "Germany"
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_backfill_prunes_all_null_field(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -508,7 +508,7 @@ class TestBackfill:
             json.dumps({"country": None})
         )
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
@@ -524,7 +524,7 @@ class TestBackfill:
         assert not any(f.name == "country" for f in rag.schema.fields)
 
     def test_backfill_returns_early_when_no_unpopulated(self, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -534,7 +534,7 @@ class TestBackfill:
 
         mock_vector = MagicMock()
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
@@ -546,9 +546,9 @@ class TestBackfill:
         assert result == {"populated": [], "pruned": []}
         mock_vector.get_all_chunks.assert_not_called()
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_backfill_calls_on_progress(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -570,7 +570,7 @@ class TestBackfill:
             json.dumps({"author": "Alice", "year": 2023})
         )
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=mock_vector,
@@ -590,9 +590,9 @@ class TestBackfill:
 
 
 class TestIncrementalIngest:
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_unchanged_doc_is_skipped(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         text_file = tmp_path / "doc.txt"
         text_file.write_text("Hello world", encoding="utf-8")
@@ -608,7 +608,7 @@ class TestIncrementalIngest:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         vector_store = ChromaVectorStore(persist_dir=chroma_dir)
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             schema=[
                 MetadataField(name="author", type="text", description="Author"),
@@ -626,9 +626,9 @@ class TestIncrementalIngest:
         rag.ingest(str(tmp_path))
         assert mock_client.chat.completions.create.call_count == first_call_count
 
-    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    @patch("duo_rag.ingestion.extractor.openai.OpenAI")
     def test_changed_doc_is_re_ingested(self, mock_openai_cls, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         text_file = tmp_path / "doc.txt"
         text_file.write_text("Hello world", encoding="utf-8")
@@ -644,7 +644,7 @@ class TestIncrementalIngest:
         relational_store = SQLiteRelationalStore(db_path=db_path)
         vector_store = ChromaVectorStore(persist_dir=chroma_dir)
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             schema=[
                 MetadataField(name="author", type="text", description="Author"),
@@ -673,7 +673,7 @@ class TestIncrementalIngest:
 
 class TestPruneEmptyFields:
     def test_empty_field_is_pruned_from_db_and_schema(self, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -682,7 +682,7 @@ class TestPruneEmptyFields:
         # Insert a row with NULL for both fields
         relational_store.insert("doc1", {"author": None, "year": None})
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
@@ -697,7 +697,7 @@ class TestPruneEmptyFields:
         assert len(rag.schema.fields) == 0
 
     def test_populated_field_not_pruned(self, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
@@ -705,7 +705,7 @@ class TestPruneEmptyFields:
         relational_store.initialize(schema)
         relational_store.insert("doc1", {"author": "Alice", "year": None})
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
@@ -722,20 +722,20 @@ class TestPruneEmptyFields:
 
 
 # ===========================================================================
-# 12. add_field method on MetaRAG
+# 12. add_field method on DuoRAG
 # ===========================================================================
 
 
 class TestAddFieldMethod:
     def test_add_field_updates_store_and_schema(self, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),
@@ -756,14 +756,14 @@ class TestAddFieldMethod:
         assert "country" in cols
 
     def test_add_field_skips_duplicate(self, tmp_path):
-        from meta_rag import MetaRAG
+        from duo_rag import DuoRAG
 
         db_path = str(tmp_path / "metadata.db")
         relational_store = SQLiteRelationalStore(db_path=db_path)
         schema = _make_schema()
         relational_store.initialize(schema)
 
-        rag = MetaRAG(
+        rag = DuoRAG(
             llm_model="gpt-5-mini",
             data_dir=str(tmp_path),
             vector_store=MagicMock(),

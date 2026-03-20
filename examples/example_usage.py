@@ -1,8 +1,8 @@
-"""Example usage of meta-rag with manual schema, ingestion, and queries.
+"""Example usage of duo-rag with manual schema, ingestion, and queries.
 
-This script demonstrates the core workflow of meta-rag:
+This script demonstrates the core workflow of duo-rag:
   1. Define a metadata schema with typed fields.
-  2. Initialize MetaRAG with an LLM model and schema.
+  2. Initialize DuoRAG with an LLM model and schema.
   3. Ingest a directory of documents (chunking + metadata extraction).
   4. Run qualitative (semantic) and quantitative (SQL) queries.
 
@@ -20,14 +20,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from meta_rag import MetaRAG, MetadataField
+from duo_rag import DuoRAG, MetadataField
 
 
 def main():
-    parser = argparse.ArgumentParser(description="meta-rag example")
+    parser = argparse.ArgumentParser(description="duo-rag example")
     parser.add_argument("--verbose", action="store_true", help="Print generated SQL")
     parser.add_argument("--test", action="store_true", help="Run demo queries before interactive mode")
-    parser.add_argument("--no-schema", action="store_true", help="Skip predefined schema; let MetaRAG discover fields from documents")
+    parser.add_argument("--no-schema", action="store_true", help="Skip predefined schema; let DuoRAG discover fields from documents")
     parser.add_argument("--reset", action="store_true", help="Delete existing data and re-ingest from scratch")
     args = parser.parse_args()
     verbose = args.verbose
@@ -60,17 +60,17 @@ def main():
 
     if args.no_schema:
         schema = None
-        print("No schema provided — MetaRAG will auto-discover fields from documents.")
+        print("No schema provided — DuoRAG will auto-discover fields from documents.")
 
     # ------------------------------------------------------------------
-    # 2. Initialize MetaRAG
+    # 2. Initialize DuoRAG
     #    - llm_model:     which LLM to use for extraction and answering
     #    - schema:        the metadata fields defined above
     #    - data_dir:      where to store the vector store and SQL database
     #    - chunk_size:    maximum number of characters per text chunk
     #    - chunk_overlap: overlap between consecutive chunks
     # ------------------------------------------------------------------
-    rag = MetaRAG(
+    rag = DuoRAG(
         llm_model="gpt-5-mini",
         schema=schema,
         data_dir="./example_data",
@@ -80,7 +80,7 @@ def main():
 
     # ------------------------------------------------------------------
     # 3. Ingest documents
-    #    Point MetaRAG at a directory of .txt files. It will:
+    #    Point DuoRAG at a directory of .txt files. It will:
     #      - Read and chunk each document
     #      - Use the LLM to extract metadata per the schema
     #      - Store chunks in a vector store and metadata in a SQL database
@@ -125,7 +125,7 @@ def main():
 
     # ------------------------------------------------------------------
     # 5. Interactive query loop (with schema gap detection)
-    #    Pass evolve=True so meta-rag detects missing schema fields and
+    #    Pass evolve=True so duo-rag detects missing schema fields and
     #    appends an informational message when a gap is found.
     #    After a gap is detected, call rag.backfill() to populate the
     #    new field from all already-stored document chunks.
